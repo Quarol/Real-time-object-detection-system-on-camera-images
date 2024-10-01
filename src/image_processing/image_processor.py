@@ -33,7 +33,6 @@ class ImageProcessor:
             scale_y = max_frame_height / height
 
             scale = min(scale_x, scale_y)
-            scale = 0.4
 
             new_width = int(width * scale)
             new_height = int(height * scale)

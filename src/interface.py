@@ -3,6 +3,7 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import cv2 as cv
 from cv2.typing import MatLike
+import numpy as np
 
 from app import App
 from video_manager import VideoManager, NO_VIDEO
@@ -86,15 +87,23 @@ class GUI:
 
 
     def _update_frame(self, frame: MatLike):
-        if frame is not None:
-            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        if frame is None:
+            frame = self._generate_black_image()
 
-            img = Image.fromarray(frame)
-            imgtk = ImageTk.PhotoImage(image=img)
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
-            self._display_frame.imgtk = imgtk
-            self._display_frame.configure(image=imgtk)
+        img = Image.fromarray(frame)
+        imgtk = ImageTk.PhotoImage(image=img)
 
-        self._video_frame.after(MILLISECONDS_PER_FRAME,
-            lambda: self._update_frame(self._video_source.process_frame(self._max_frame_width, self._max_frame_height))
+        self._display_frame.imgtk = imgtk
+        self._display_frame.configure(image=imgtk)
+
+        self._video_frame.after(
+            MILLISECONDS_PER_FRAME,
+            lambda frame=self._video_source.process_frame(self._max_frame_width, self._max_frame_height): 
+                          self._update_frame(frame)
         )
+
+    def _generate_black_image(self) -> MatLike:
+        black_image = np.zeros((self._max_frame_height, self._max_frame_width, 3), dtype=np.uint8)
+        return black_image
