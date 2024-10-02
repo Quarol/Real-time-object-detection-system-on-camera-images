@@ -1,4 +1,3 @@
-
 from video_manager import VideoManager, NO_VIDEO, VIDEO_FILE
 
 class App:
