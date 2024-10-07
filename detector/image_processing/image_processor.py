@@ -15,10 +15,9 @@ class ImageProcessor:
     def __init__(self, parent_app: App, video_manager: VideoManager) -> None:
         self._parent_app = parent_app
         self._video_manager = video_manager
-        self._detector = YOLO('yolov8n.pt', verbose=False)
+        self._detector = YOLO('yolov8n.pt')
         
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(device)
         self._detector.to(device)
 
 
