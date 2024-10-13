@@ -2,32 +2,24 @@ import cv2 as cv
 from cv2.typing import MatLike
 from ultralytics import YOLO
 import torch
+import logging
 
-from app import App
-from video_manager import VideoManager
+from detector.app import App
+from detector.video_manager import VideoManager
 
 
-DOWNSCALED_DIMENSION = (400, 200)
-DOWNSCALE_FACTOR = 0.5
+CONFIDENCE_THRESHOLD = 0.5
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class ImageProcessor:
     def __init__(self, parent_app: App, video_manager: VideoManager) -> None:
+        logging.getLogger("ultralytics").setLevel(logging.CRITICAL)
+
         self._parent_app = parent_app
         self._video_manager = video_manager
-        self._detector = YOLO('yolov8n.pt')
-        
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self._detector.to(device)
 
-
-    def _get_downscaled_dimension(self, frame: MatLike, scaling_factor: float):
-        height, width = frame.shape[:2]
-
-        height = int(height * scaling_factor)
-        width = int(width * scaling_factor)
-
-        return (width, height)
+        self._detector = YOLO('yolo_models/yolov8n-pretrained-default.pt')
 
 
     def process_frame(self, max_frame_width, max_frame_height) -> None:
@@ -36,27 +28,26 @@ class ImageProcessor:
             return None
         
         output_width, output_height = self._fitting_dimensions(frame, max_frame_width, max_frame_height)
-        #frame = cv.resize(frame, DOWNSCALED_DIMENSION, interpolation=cv.INTER_LINEAR)
-        dimension = self._get_downscaled_dimension(frame, DOWNSCALE_FACTOR)
-        frame = cv.resize(frame, dimension, interpolation=cv.INTER_LINEAR)
+        frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
         detections = self._detect_people(frame)
-        confidence_threshold = 0.5
-        frame = self._draw_rectangles(frame, detections, confidence_threshold)
-
-        frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
+        frame = self._draw_rectangles(frame, detections)
         
         return frame
 
 
     def _detect_people(self, frame: MatLike):
-        results = self._detector(frame)
-        people_detection = results[0].boxes
-
-        return people_detection
+        return self._detector(
+            frame,
+            conf=CONFIDENCE_THRESHOLD,
+            device=DEVICE
+        )[0].boxes
 
 
     def _draw_rectangles(self, frame: MatLike, detections, confidence_threshold=0.5):
+        print(len(detections))
+
         for box in detections:
             x_min, y_min, x_max, y_max = box.xyxy[0]
             conf = box.conf[0]

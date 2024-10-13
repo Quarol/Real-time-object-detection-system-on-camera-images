@@ -4,11 +4,12 @@ from PIL import Image, ImageTk
 import cv2 as cv
 from cv2.typing import MatLike
 import numpy as np
+import time
 
-from app import App
-from video_manager import VideoManager, NO_VIDEO
-from image_processing.image_processor import ImageProcessor
-from consts import MILLISECONDS_PER_FRAME
+from detector.app import App
+from detector.video_manager import VideoManager, NO_VIDEO
+from detector.image_processor import ImageProcessor
+from detector.consts import MILLISECONDS_PER_FRAME
 
 VIDEO_FRAME_MARGIN = 10
 
@@ -18,6 +19,10 @@ class GUI:
         self._video_source = video_source
         self._initialize_gui()
         self._selected_video_source_id = None
+
+        self._frame_count = 0
+        self._start_time = time.time()
+        self._is_frame_none = False
 
 
     def _initialize_gui(self):
@@ -82,6 +87,7 @@ class GUI:
 
 
     def show(self):
+        #self._test_without_processing()
         self._update_frame(self._video_source.process_frame(self._max_frame_width, self._max_frame_height))
         self._root.mainloop()
 
@@ -90,19 +96,43 @@ class GUI:
         if frame is None:
             frame = self._generate_black_image()
 
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
 
         self._display_frame.imgtk = imgtk
         self._display_frame.configure(image=imgtk)
 
-        self._video_frame.after(
-            MILLISECONDS_PER_FRAME,
-            lambda frame=self._video_source.process_frame(self._max_frame_width, self._max_frame_height): 
-                          self._update_frame(frame)
-        )
+        #self._print_real_fps()
+        
+        self._video_frame.after(MILLISECONDS_PER_FRAME, self._process_and_update_frame)
+
+    
+    def _process_and_update_frame(self):
+        t1 = time.time()
+        frame=self._video_source.process_frame(self._max_frame_width, self._max_frame_height)
+        t2 = time.time()
+        t3 = t2 - t1
+        print(f"Processing time: {t3}")
+
+        self._update_frame(frame)
+
+
+    def _print_real_fps(self):
+        self._frame_count += 1
+        current_frame_time = time.time()
+        elapsed_time = current_frame_time - self._start_time
+
+        if elapsed_time >= 1.0:
+            print(f'real FPS: {self._frame_count}, time elapsed: {elapsed_time * 1000}, time without delay: {elapsed_time*1000 - MILLISECONDS_PER_FRAME*self._frame_count}')
+
+            self._start_time = current_frame_time
+            self._frame_count = 0
+
+    
+    def _test_without_processing(self):
+        self._print_real_fps()
+        self._video_frame.after(MILLISECONDS_PER_FRAME, self._test_without_processing)
+
 
     def _generate_black_image(self) -> MatLike:
         black_image = np.zeros((self._max_frame_height, self._max_frame_width, 3), dtype=np.uint8)
