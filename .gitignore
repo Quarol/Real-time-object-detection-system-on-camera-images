@@ -1,7 +1,5 @@
 **/__pycache__/
 /demo_assets
-**/yolo*.pt
-/yolo_models
 **/venv
-/datasets
-/runs
+yolo_models/*
+!yolo_models/.gitkeep
