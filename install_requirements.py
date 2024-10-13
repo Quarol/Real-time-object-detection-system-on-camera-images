@@ -1,6 +1,16 @@
 import subprocess
 import sys
 
+default_packages = [
+    'opencv-python==4.10.0.84',
+    'ultralytics==8.3.7'
+]
+
+extended_packages = [
+    ('torch==2.4.1', 'https://download.pytorch.org/whl/cu118'),
+    ('torchaudio==2.4.1', 'https://download.pytorch.org/whl/cu118'),
+    ('torchvision==0.19.1', 'https://download.pytorch.org/whl/cu118'),
+]
 
 def install_package(package: str, extra_index: str = None):
     command = [sys.executable, '-m', 'pip', 'install']
@@ -17,17 +27,6 @@ def install_package(package: str, extra_index: str = None):
 
 
 def main():
-    default_packages = [
-        'opencv-python==4.10.0.84',
-        'ultralytics==8.3.7'
-    ]
-
-    extended_packages = [
-        ('torch==2.4.1', 'https://download.pytorch.org/whl/cu118'),
-        ('torchaudio==2.4.1', 'https://download.pytorch.org/whl/cu118'),
-        ('torchvision==0.19.1', 'https://download.pytorch.org/whl/cu118'),
-    ]
-
     for package, extra_index in extended_packages:
         install_package(package, extra_index)
 
