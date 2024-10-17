@@ -1,4 +1,4 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import set_repo_root
+from ultralytics import YOLO
+
+model = YOLO('../yolo_models/yolov8n-pretrained-default.pt')
+print(model.model.yaml)
