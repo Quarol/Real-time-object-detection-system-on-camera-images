@@ -1,16 +1,42 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import set_repo_root
-
+from datetime import datetime
 from ultralytics import YOLO
 import torch
 
+data_yaml = 'COCO_person_dataset.yaml'
+epochs = 200
+batch = 12
+device ='cuda'
+optimizer = 'auto'
+momentum = 0.937
+close_mosaic = 10
+single_cls = False
+resume = False
+save = True
+cache = False
+verbose = True
+amp = False # GTX 1650 broken
 
-data_yaml = 'cos.yaml'
-epochs = 100
-image_size = (640, 640)
-batch=4
+def train(model):
+    results = model.train(
+        data=data_yaml,
+        epochs=epochs,
+        batch=batch,
+        device=device,
+        momentum=momentum,
+        close_mosaic=close_mosaic,
+        single_cls=single_cls,
+        resume=resume,
+        save=save,
+        cache=cache,
+        optimizer=optimizer,
+        verbose=verbose,
+        amp=amp
+    )
+
+    with open('results.txt', 'w') as file:
+        file.write(str(results))
+
+    return model
 
 
 def main():
@@ -24,17 +50,17 @@ def main():
         print('Cuda not avaivable. Training would take too longs')
         exit()
 
-    results = model.train(
-        data=data_yaml,
-        epochs=epochs,
-        imgsz=image_size,
-        batch=batch,
-        device='cuda',
-        resume=True,
-        save=True
-    )
+    print('STARTED TRAINING UUUUUUU')
+    with open('trainingTime.txt', 'a') as file:
+        file.write(f'Time BEFORE training: {datetime.now()}\n')
 
-    model.save(saved_as)
+    model = train(model)
+
+    print('FINISHED TRAINING UUUUUUU')
+    with open('trainingTime.txt', 'a') as file:
+        file.write(f'Time AFTER training: {datetime.now()}\n\n')
+
+    model.save(f'../yolo_models/{saved_as}')
 
 
 if __name__ == '__main__':
