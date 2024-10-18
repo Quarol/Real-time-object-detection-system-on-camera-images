@@ -1,5 +1,3 @@
-from tkinter import filedialog
-
 from detector.video_manager import VideoManager, NO_VIDEO, VIDEO_FILE
 
 class App:
@@ -26,11 +24,3 @@ class App:
         else:
             self._video_manager.start_capture(source_id)
             
-
-    def select_video_file(self):
-        filetypes = [
-            ('Video files', '.mp4 *.avi *.mkv *.mov *.wmv')
-        ]
-        file_path = filedialog.askopenfilename(title='Select a recorded video', filetypes=filetypes)
-
-        return file_path

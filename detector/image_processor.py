@@ -2,7 +2,6 @@ import cv2 as cv
 from cv2.typing import MatLike
 from ultralytics import YOLO
 import torch
-import logging
 
 from detector.app import App
 from detector.video_manager import VideoManager
@@ -14,8 +13,6 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class ImageProcessor:
     def __init__(self, parent_app: App, video_manager: VideoManager) -> None:
-        logging.getLogger("ultralytics").setLevel(logging.CRITICAL)
-
         self._parent_app = parent_app
         self._video_manager = video_manager
 
@@ -31,31 +28,38 @@ class ImageProcessor:
         frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
         frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
-        detections = self._detect_people(frame)
+        detections = self._detect_from_frame(frame)
         frame = self._draw_rectangles(frame, detections)
         
         return frame
 
 
-    def _detect_people(self, frame: MatLike):
-        return self._detector(
+    def _detect_from_frame(self, frame: MatLike):
+        results = self._detector.predict(
             frame,
             conf=CONFIDENCE_THRESHOLD,
-            device=DEVICE
-        )[0].boxes
+            device=DEVICE,
+            verbose=False
+        ) # returns list of output frames
+        first_frame_result = results[0] # there is only one frame
+
+        return first_frame_result
 
 
-    def _draw_rectangles(self, frame: MatLike, detections, confidence_threshold=0.5):
-        print(len(detections))
+    def _draw_rectangles(self, frame: MatLike, detections):
+        boxes = detections.boxes
 
-        for box in detections:
-            x_min, y_min, x_max, y_max = box.xyxy[0]
-            conf = box.conf[0]
-            cls = int(box.cls[0])
-
-            if cls == 0 and conf >= confidence_threshold:
+        for box in boxes:
+            if self._is_object_person:
+                x_min, y_min, x_max, y_max = box.xyxy[0]
                 cv.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
+
         return frame
+    
+
+    def _is_object_person(self, box):
+        object_class = int(box.cls[0])
+        return object_class == 0
 
 
     def _fitting_dimensions(self, frame, max_width, max_height):
