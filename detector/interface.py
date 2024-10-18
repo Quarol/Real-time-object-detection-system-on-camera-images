@@ -87,7 +87,6 @@ class GUI:
 
 
     def show(self):
-        #self._test_without_processing()
         self._update_frame(self._video_source.process_frame(self._max_frame_width, self._max_frame_height))
         self._root.mainloop()
 
@@ -101,37 +100,13 @@ class GUI:
 
         self._display_frame.imgtk = imgtk
         self._display_frame.configure(image=imgtk)
-
-        #self._print_real_fps()
         
         self._video_frame.after(MILLISECONDS_PER_FRAME, self._process_and_update_frame)
 
     
     def _process_and_update_frame(self):
-        t1 = time.time()
         frame=self._video_source.process_frame(self._max_frame_width, self._max_frame_height)
-        t2 = time.time()
-        t3 = t2 - t1
-        print(f"Processing time: {t3}")
-
         self._update_frame(frame)
-
-
-    def _print_real_fps(self):
-        self._frame_count += 1
-        current_frame_time = time.time()
-        elapsed_time = current_frame_time - self._start_time
-
-        if elapsed_time >= 1.0:
-            print(f'real FPS: {self._frame_count}, time elapsed: {elapsed_time * 1000}, time without delay: {elapsed_time*1000 - MILLISECONDS_PER_FRAME*self._frame_count}')
-
-            self._start_time = current_frame_time
-            self._frame_count = 0
-
-    
-    def _test_without_processing(self):
-        self._print_real_fps()
-        self._video_frame.after(MILLISECONDS_PER_FRAME, self._test_without_processing)
 
 
     def _generate_black_image(self) -> MatLike:
