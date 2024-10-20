@@ -7,19 +7,19 @@ NO_VIDEO = -2
 VIDEO_FILE = -1
 # camera: >= 0
 
-class VideoManager:
+class VideoCapture:
     max_number_of_cameras = None
 
     def __init__(self) -> None:
         self._video_capture = None
 
 
-    def start_capture(self, source: int|str):
+    def start_capture(self, source: int|str) -> None:
         self.end_capture()
         self._video_capture = cv.VideoCapture(source)
 
 
-    def end_capture(self):
+    def end_capture(self) -> None:
         if self._video_capture is None:
             return
         self._video_capture.release()

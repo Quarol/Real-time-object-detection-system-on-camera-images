@@ -1,4 +1,17 @@
+import time 
 from ultralytics import YOLO
+
+
+def _measure_time(self, func, *args, **kwargs):
+    time1 = time.time()
+    func(*args, **kwargs)
+    time2 = time.time()
+    duration = time2 - time1
+    fps = 1 / duration if duration != 0 else 'inf'
+
+    print(f'Duration: {duration}s', end='')
+    print(f', FPS: {fps}')
+
 
 
 def main():

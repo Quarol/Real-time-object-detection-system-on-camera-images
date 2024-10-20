@@ -4,7 +4,7 @@ from ultralytics import YOLO
 import torch
 
 from detector.app import App
-from detector.video_manager import VideoManager
+from detector.video_capture import VideoCapture
 
 
 CONFIDENCE_THRESHOLD = 0.5
@@ -12,15 +12,15 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class ImageProcessor:
-    def __init__(self, parent_app: App, video_manager: VideoManager) -> None:
-        self._parent_app = parent_app
-        self._video_manager = video_manager
-
+    def __init__(self, video_manager: VideoCapture) -> None:
         self._detector = YOLO('yolo_models/yolov8n-pretrained-default.pt')
 
+    
+    def set_detection_model(self, path: str):
+        self._detector = YOLO(f'yolo/models{path}')
 
-    def process_frame(self, max_frame_width, max_frame_height) -> None:
-        frame = self._video_manager.get_frame()
+
+    def process_frame(self, frame, max_frame_width, max_frame_height) -> None:
         if frame is None:
             return None
         
@@ -41,7 +41,7 @@ class ImageProcessor:
             device=DEVICE,
             verbose=False
         ) # returns list of output frames
-        first_frame_result = results[0] # there is only one frame
+        first_frame_result = results[0] # get first (and only) frame
 
         return first_frame_result
 

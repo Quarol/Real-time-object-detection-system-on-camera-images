@@ -1,31 +1,36 @@
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
-import cv2 as cv
 from cv2.typing import MatLike
 import numpy as np
 import time
+import math
 
 from detector.app import App
-from detector.video_manager import VideoManager, NO_VIDEO
+from detector.frame_processor import FrameProcessor
+from detector.video_capture import VideoCapture, NO_VIDEO
 from detector.image_processor import ImageProcessor
 from detector.consts import MILLISECONDS_PER_FRAME
 
 VIDEO_FRAME_MARGIN = 10
 
 class GUI:
-    def __init__(self, parent_app: App, video_source: ImageProcessor) -> None:
+    def __init__(self, parent_app: App, video_source: FrameProcessor) -> None:
         self._parent_app = parent_app
         self._video_source = video_source
-        self._initialize_gui()
+
         self._selected_video_source_id = None
+        self._initialize_gui()
 
-        self._frame_count = 0
         self._start_time = time.time()
-        self._is_frame_none = False
+        self._no_video_image = self._generate_black_image()
+        self._frame_counter = 0
+        self._time_before_frame = time.time()
+
+        self._video_source.set_max_frame_size(self._max_frame_width, self._max_frame_height)
 
 
-    def _initialize_gui(self):
+    def _initialize_gui(self) -> None:
         self._root = tk.Tk()
 
         self._root.title('Pedestrian detector')
@@ -38,11 +43,11 @@ class GUI:
         self._initialize_video_player()
 
 
-    def _initialize_video_source_menu(self):
+    def _initialize_video_source_menu(self) -> None:
         self._source_menu = tk.Menu(master=self._menubar, tearoff=0)
         self._selected_video_source_id = tk.IntVar()
 
-        sources = VideoManager.get_available_sources()
+        sources = VideoCapture.get_available_sources()
         for source_name in sources:
             self._source_menu.add_radiobutton(
                 label=source_name,
@@ -55,7 +60,7 @@ class GUI:
         self._menubar.add_cascade(menu=self._source_menu, label='Video source')
 
 
-    def _initialize_video_player(self):
+    def _initialize_video_player(self) -> None:
         self._video_frame = tk.Frame(self._root)
         self._video_frame.pack(
             padx=VIDEO_FRAME_MARGIN,
@@ -77,7 +82,7 @@ class GUI:
         self._max_frame_height = self._video_frame.winfo_height()
 
 
-    def select_video_file(self):
+    def select_video_file(self) -> str:
         filetypes = [
             ('Video files', '.mp4 *.avi *.mkv *.mov *.wmv')
         ]
@@ -86,29 +91,66 @@ class GUI:
         return file_path
 
 
-    def show(self):
-        self._update_frame(self._video_source.process_frame(self._max_frame_width, self._max_frame_height))
+    def show(self) -> None:
+        self._show_frame(self._no_video_image)
+        self._update_frame()
         self._root.mainloop()
 
 
-    def _update_frame(self, frame: MatLike):
+    def _measure_time(self, func, *args, **kwargs):
+        time1 = time.time()
+        result = func(*args, **kwargs)
+        time2 = time.time()
+        duration = time2 - time1
+        fps = 1 / duration if duration != 0 else 'inf'
+
+        print(f'Duration: {duration}s', end='')
+        print(f', FPS: {fps}')
+
+        return result
+
+
+    def _show_frame(self, frame: MatLike) -> None:
         if frame is None:
-            frame = self._generate_black_image()
+            frame = self._no_video_image
 
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
 
         self._display_frame.imgtk = imgtk
         self._display_frame.configure(image=imgtk)
-        
-        self._video_frame.after(MILLISECONDS_PER_FRAME, self._process_and_update_frame)
 
-    
-    def _process_and_update_frame(self):
-        frame=self._video_source.process_frame(self._max_frame_width, self._max_frame_height)
-        self._update_frame(frame)
+
+    def _update_frame(self) -> None:
+        begin = time.time()
+        frame = self._video_source.get_latest_frame()
+        end = time.time()
+        duration_in_milliseconds = (end - begin) * 1000
+
+        if frame is not None:
+            self._show_frame(frame)
+        
+        self._count_and_update_fps()
+        time_remaining = math.ceil(MILLISECONDS_PER_FRAME - duration_in_milliseconds)
+        print(f'duration={duration_in_milliseconds}, per_frame={MILLISECONDS_PER_FRAME}, time={time_remaining}')
+        sleep_time = max(1, time_remaining)
+
+        self._video_frame.after(sleep_time, self._update_frame)
 
 
     def _generate_black_image(self) -> MatLike:
         black_image = np.zeros((self._max_frame_height, self._max_frame_width, 3), dtype=np.uint8)
         return black_image
+    
+
+    def _count_and_update_fps(self) -> None:
+        time_after_frame = time.time()
+        self._frame_counter += 1
+        duration = time_after_frame - self._time_before_frame
+
+        if duration >= 1:
+            real_fps = self._frame_counter / duration if duration != 0 else 'inf'
+            print(f'real_fps: {real_fps}')
+
+            self._time_before_frame = time_after_frame
+            self._frame_counter = 0
