@@ -13,6 +13,7 @@ from detector.image_processor import ImageProcessor
 from detector.consts import MILLISECONDS_PER_FRAME
 
 VIDEO_FRAME_MARGIN = 10
+AFTER_DELAY = 1
 
 class GUI:
     def __init__(self, parent_app: App, video_source: FrameProcessor) -> None:
@@ -28,6 +29,8 @@ class GUI:
         self._time_before_frame = time.time()
 
         self._video_source.set_max_frame_size(self._max_frame_width, self._max_frame_height)
+
+        self._total_time = 0
 
 
     def _initialize_gui(self) -> None:
@@ -111,9 +114,6 @@ class GUI:
 
 
     def _show_frame(self, frame: MatLike) -> None:
-        if frame is None:
-            frame = self._no_video_image
-
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
 
@@ -122,21 +122,18 @@ class GUI:
 
 
     def _update_frame(self) -> None:
-        begin = time.time()
-        frame = self._video_source.get_latest_frame()
-        end = time.time()
-        duration_in_milliseconds = (end - begin) * 1000
+        ret, frame = self._video_source.get_latest_frame()
 
-        if frame is not None:
-            self._show_frame(frame)
-        
+        if ret == False:
+            self._show_frame(self._no_video_image)
+        else:
+            if frame is not None:
+                self._show_frame(frame)
+                self._frame_counter += 1
+
         self._count_and_update_fps()
-        time_remaining = math.ceil(MILLISECONDS_PER_FRAME - duration_in_milliseconds)
-        print(f'duration={duration_in_milliseconds}, per_frame={MILLISECONDS_PER_FRAME}, time={time_remaining}')
-        sleep_time = max(1, time_remaining)
-
-        self._video_frame.after(sleep_time, self._update_frame)
-
+        self._video_frame.after(AFTER_DELAY, self._update_frame)
+    
 
     def _generate_black_image(self) -> MatLike:
         black_image = np.zeros((self._max_frame_height, self._max_frame_width, 3), dtype=np.uint8)
@@ -145,10 +142,9 @@ class GUI:
 
     def _count_and_update_fps(self) -> None:
         time_after_frame = time.time()
-        self._frame_counter += 1
         duration = time_after_frame - self._time_before_frame
 
-        if duration >= 1:
+        if duration >= 5:
             real_fps = self._frame_counter / duration if duration != 0 else 'inf'
             print(f'real_fps: {real_fps}')
 

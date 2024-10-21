@@ -1,5 +1,6 @@
 import cv2 as cv
 from cv2.typing import MatLike
+import time
 
 MAX_NUMBER_OF_CAMERAS = 10
 
@@ -15,7 +16,6 @@ class VideoCapture:
 
 
     def start_capture(self, source: int|str) -> None:
-        self.end_capture()
         self._video_capture = cv.VideoCapture(source)
 
 
@@ -23,13 +23,17 @@ class VideoCapture:
         if self._video_capture is None:
             return
         self._video_capture.release()
+        
 
+    def is_capture_on(self) -> bool:
+        return self._video_capture is not None and self._video_capture.isOpened()
+    
 
     def get_frame(self) -> MatLike|None:
         if self._video_capture is None:
             return None
-        _, frame = self._video_capture.read()
-        return frame
+        ret, frame = self._video_capture.read()
+        return ret, frame
 
 
     @staticmethod
