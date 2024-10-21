@@ -144,7 +144,7 @@ class GUI:
         time_after_frame = time.time()
         duration = time_after_frame - self._time_before_frame
 
-        if duration >= 5:
+        if duration >= 1:
             real_fps = self._frame_counter / duration if duration != 0 else 'inf'
             print(f'real_fps: {real_fps}')
 

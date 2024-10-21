@@ -29,7 +29,7 @@ class VideoCapture:
         return self._video_capture is not None and self._video_capture.isOpened()
     
 
-    def get_frame(self) -> MatLike|None:
+    def get_frame(self):
         if self._video_capture is None:
             return None
         ret, frame = self._video_capture.read()
