@@ -28,6 +28,8 @@ class FrameProcessor:
         self._latest_frame = None
         self._ret = False
 
+        self._camera_seconds_per_frame = None
+
 
     def set_max_frame_size(self, width, height) -> None:
         self._max_frame_width = width
@@ -62,7 +64,14 @@ class FrameProcessor:
         self.stop_processing()
         self._end_capture()
         self._video_capture.end_capture()
+
         self._video_capture.start_capture(source)
+        capture_fps = self._video_capture.get_fps()
+
+        if capture_fps is None:
+            return
+        
+        self._camera_seconds_per_frame = 1 / capture_fps
         self._ret = True
         self._start_capture(source)
         self.start_processing()
@@ -90,7 +99,11 @@ class FrameProcessor:
         self._ret = True
 
         while self._is_capturing:
+            begin = time.time()
+
             is_capture_on, newest_frame = self._video_capture.get_frame()
+            time2 = time.time()
+            print(time2 - begin)
 
             if not is_capture_on:
                 with self._lock:
@@ -101,15 +114,21 @@ class FrameProcessor:
 
             if newest_frame is None:
                 continue
-
+            
             with self._queue_not_full:
                 while len(self._frame_queue) == CAPTURED_FRAMES_QUEUE_SIZE:
                     self._queue_not_full.wait() 
 
                 self._frame_queue.append(newest_frame)
                 self._queue_not_empty.notify()
-            
-            time.sleep(0.001)
+
+            # Adjust sleep time to camera FPS
+            end = time.time()
+            duration = end - begin
+            sleep_time = self._camera_seconds_per_frame - duration
+
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
 
     def _process_frames(self) -> None:
@@ -122,16 +141,16 @@ class FrameProcessor:
                 self._queue_not_full.notify()
 
 
-            processed_frame = self._image_processor.process_frame(
-                frame,
-                self._max_frame_width,
-                self._max_frame_height
-            )
+            processed_frame = frame
+            #processed_frame = self._image_processor.process_frame(
+            #    frame,
+            #    self._max_frame_width,
+            #    self._max_frame_height
+            #)
+
 
             with self._lock:
                 self._latest_frame = processed_frame
-
-            time.sleep(0.001)
 
 
     def naive(self) -> MatLike:

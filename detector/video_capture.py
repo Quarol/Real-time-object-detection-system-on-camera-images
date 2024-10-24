@@ -34,6 +34,12 @@ class VideoCapture:
             return None
         ret, frame = self._video_capture.read()
         return ret, frame
+    
+
+    def get_fps(self):
+        if self._video_capture is None:
+            return None
+        return self._video_capture.get(cv.CAP_PROP_FPS)
 
 
     @staticmethod
