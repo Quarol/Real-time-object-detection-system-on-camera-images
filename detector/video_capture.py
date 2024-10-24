@@ -31,8 +31,9 @@ class VideoCapture:
 
     def get_frame(self):
         if self._video_capture is None:
-            return None
+            return None, None
         ret, frame = self._video_capture.read()
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         return ret, frame
     
 

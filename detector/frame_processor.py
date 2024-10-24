@@ -99,11 +99,7 @@ class FrameProcessor:
         self._ret = True
 
         while self._is_capturing:
-            begin = time.time()
-
             is_capture_on, newest_frame = self._video_capture.get_frame()
-            time2 = time.time()
-            print(time2 - begin)
 
             if not is_capture_on:
                 with self._lock:
@@ -122,14 +118,6 @@ class FrameProcessor:
                 self._frame_queue.append(newest_frame)
                 self._queue_not_empty.notify()
 
-            # Adjust sleep time to camera FPS
-            end = time.time()
-            duration = end - begin
-            sleep_time = self._camera_seconds_per_frame - duration
-
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-
 
     def _process_frames(self) -> None:
         while self._is_processing:
@@ -142,16 +130,16 @@ class FrameProcessor:
 
 
             processed_frame = frame
-            #processed_frame = self._image_processor.process_frame(
-            #    frame,
-            #    self._max_frame_width,
-            #    self._max_frame_height
-            #)
+            processed_frame = self._image_processor.process_frame(
+                frame,
+                self._max_frame_width,
+                self._max_frame_height
+            )
 
 
             with self._lock:
                 self._latest_frame = processed_frame
-
+            
 
     def naive(self) -> MatLike:
         with self._lock:

@@ -2,6 +2,7 @@ import cv2 as cv
 from cv2.typing import MatLike
 from ultralytics import YOLO
 import torch
+import time
 
 from detector.app import App
 from detector.video_capture import VideoCapture
@@ -12,7 +13,7 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class ImageProcessor:
-    def __init__(self, video_manager: VideoCapture) -> None:
+    def __init__(self) -> None:
         self._detector = YOLO('yolo_models/yolov8n-pretrained-default.pt')
 
     
@@ -26,9 +27,12 @@ class ImageProcessor:
         
         output_width, output_height = self._fitting_dimensions(frame, max_frame_width, max_frame_height)
         frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
+        time1 = time.perf_counter()
         detections = self._detect_from_frame(frame)
+        time2 = time.perf_counter()
+        print(time2 - time1)
+
         frame = self._draw_rectangles(frame, detections)
         
         return frame

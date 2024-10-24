@@ -26,7 +26,7 @@ class GUI:
         self._start_time = time.time()
         self._no_video_image = self._generate_black_image()
         self._frame_counter = 0
-        self._time_before_frame = time.time()
+        self._time_before_frame = time.perf_counter()
 
         self._video_source.set_max_frame_size(self._max_frame_width, self._max_frame_height)
 
@@ -101,9 +101,9 @@ class GUI:
 
 
     def _measure_time(self, func, *args, **kwargs):
-        time1 = time.time()
+        time1 = time.perf_counter()
         result = func(*args, **kwargs)
-        time2 = time.time()
+        time2 = time.perf_counter()
         duration = time2 - time1
         fps = 1 / duration if duration != 0 else 'inf'
 
@@ -141,7 +141,7 @@ class GUI:
     
 
     def _count_and_update_fps(self) -> None:
-        time_after_frame = time.time()
+        time_after_frame = time.perf_counter()
         duration = time_after_frame - self._time_before_frame
 
         if duration >= 1:

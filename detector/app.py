@@ -8,7 +8,7 @@ class App:
 
 
         self._video_capture = VideoCapture()
-        self._image_processor = ImageProcessor(self)
+        self._image_processor = ImageProcessor()
         self._frame_processor = FrameProcessor(self._video_capture, self._image_processor)
         self._gui = GUI(self, self._frame_processor)
 
