@@ -8,8 +8,8 @@ from detector.app import App
 from detector.video_capture import VideoCapture
 
 
-CONFIDENCE_THRESHOLD = 0.5
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+CONFIDENCE_THRESHOLD = 0.75
+DEVICE = 'cuda'
 
 
 class ImageProcessor:
@@ -28,10 +28,7 @@ class ImageProcessor:
         output_width, output_height = self._fitting_dimensions(frame, max_frame_width, max_frame_height)
         frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
 
-        time1 = time.perf_counter()
         detections = self._detect_from_frame(frame)
-        time2 = time.perf_counter()
-        print(time2 - time1)
 
         frame = self._draw_rectangles(frame, detections)
         

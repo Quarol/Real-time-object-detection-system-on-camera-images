@@ -31,6 +31,7 @@ class GUI:
         self._video_source.set_max_frame_size(self._max_frame_width, self._max_frame_height)
 
         self._total_time = 0
+        self._time_before_frame = None
 
 
     def _initialize_gui(self) -> None:
@@ -96,6 +97,7 @@ class GUI:
 
     def show(self) -> None:
         self._show_frame(self._no_video_image)
+        self._time_before_frame = time.perf_counter()
         self._update_frame()
         self._root.mainloop()
 
@@ -128,7 +130,12 @@ class GUI:
             self._show_frame(self._no_video_image)
         else:
             if frame is not None:
+                time_after_frame = time.perf_counter()
                 self._show_frame(frame)
+                duration = time_after_frame - self._time_before_frame
+                self._time_before_frame = time_after_frame
+                fps = 'inf' if duration == 0 else 1 / duration
+                print(f'duration={duration}, fps={fps}')
                 self._frame_counter += 1
 
         self._count_and_update_fps()
@@ -146,7 +153,7 @@ class GUI:
 
         if duration >= 1:
             real_fps = self._frame_counter / duration if duration != 0 else 'inf'
-            #print(f'real_fps: {real_fps}')
+            print(f'real_fps: {real_fps}')
 
             self._time_before_frame = time_after_frame
             self._frame_counter = 0
