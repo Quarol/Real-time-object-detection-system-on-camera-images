@@ -102,7 +102,7 @@ class FrameProcessor:
         self._ret = True
 
         while self._is_capturing:
-            is_capture_on, newest_frame = self._video_capture.get_frame()
+            is_capture_on, frame = self._video_capture.get_frame()
 
             if not is_capture_on:
                 with self._lock:
@@ -111,16 +111,16 @@ class FrameProcessor:
                     self._ret = False
                 break
 
-            if newest_frame is None:
+            if frame is None:
                 continue
 
-            newest_frame = self._image_processor.fit_frame_into_screen(newest_frame, self._max_frame_width, self._max_frame_height)
+            frame = self._image_processor.fit_frame_into_screen(frame, self._max_frame_width, self._max_frame_height)
             
             with self._queue_not_full:
                 while len(self._frame_queue) == CAPTURED_FRAMES_QUEUE_SIZE:
                     self._queue_not_full.wait() 
 
-                self._frame_queue.append(newest_frame)
+                self._frame_queue.append(frame)
                 self._queue_not_empty.notify()
 
 
