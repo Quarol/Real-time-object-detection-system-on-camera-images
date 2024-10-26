@@ -3,22 +3,25 @@ from cv2.typing import MatLike
 from ultralytics import YOLO
 import torch
 import time
+import os
+import numpy as np
 
 from detector.app import App
 from detector.video_capture import VideoCapture
 
-
+BLACK_IMAGE = np.zeros((1080, 1920, 3), dtype=np.uint8)
 CONFIDENCE_THRESHOLD = 0.75
 DEVICE = 'cuda'
 
 
 class ImageProcessor:
     def __init__(self) -> None:
-        self._detector = YOLO('yolo_models/yolov8n-pretrained-default.pt')
-
+        self._detector = self.set_detection_model('yolov8n-pretrained-default.pt')
     
-    def set_detection_model(self, path: str):
-        self._detector = YOLO(f'yolo/models{path}')
+
+    def set_detection_model(self, name: str):
+        self._detector = YOLO(f'yolo_models/{name}')
+        self.detect_objects(BLACK_IMAGE)
 
 
     def detect_objects(self, frame: MatLike):
