@@ -21,46 +21,43 @@ class ImageProcessor:
         self._detector = YOLO(f'yolo/models{path}')
 
 
-    def process_frame(self, frame, max_frame_width, max_frame_height) -> None:
-        if frame is None:
-            return None
-        
-        output_width, output_height = self._fitting_dimensions(frame, max_frame_width, max_frame_height)
-        frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
-
-        detections = self._detect_from_frame(frame)
-
-        frame = self._draw_rectangles(frame, detections)
-        
-        return frame
-
-
-    def _detect_from_frame(self, frame: MatLike):
+    def detect_objects(self, frame: MatLike):
         results = self._detector.predict(
             frame,
             conf=CONFIDENCE_THRESHOLD,
             device=DEVICE,
             verbose=False
-        ) # returns list of output frames
-        first_frame_result = results[0] # get first (and only) frame
+        ) # Returns list of output frames
+        first_frame_result = results[0] # Get first (and only) frame
 
         return first_frame_result
 
 
-    def _draw_rectangles(self, frame: MatLike, detections):
+    def visualize_people_presence(self, frame: MatLike, detections):
         boxes = detections.boxes
+        areTherePeople = False
 
         for box in boxes:
             if self._is_object_person:
+                areTherePeople = True
                 x_min, y_min, x_max, y_max = box.xyxy[0]
                 cv.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
 
-        return frame
+        return frame, areTherePeople
     
 
     def _is_object_person(self, box):
         object_class = int(box.cls[0])
         return object_class == 0
+
+
+    def fit_frame_into_screen(self, frame: MatLike, max_frame_width, max_frame_height):
+        if frame is None:
+            return None
+        
+        output_width, output_height = self._fitting_dimensions(frame, max_frame_width, max_frame_height)
+        frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
+        return frame
 
 
     def _fitting_dimensions(self, frame, max_width, max_height):

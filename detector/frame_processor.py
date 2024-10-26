@@ -30,6 +30,9 @@ class FrameProcessor:
 
         self._camera_seconds_per_frame = None
 
+        self._max_frame_width = 1920
+        self._max_frame_height = 1080
+
 
     def set_max_frame_size(self, width, height) -> None:
         self._max_frame_width = width
@@ -110,6 +113,8 @@ class FrameProcessor:
 
             if newest_frame is None:
                 continue
+
+            newest_frame = self._image_processor.fit_frame_into_screen(newest_frame, self._max_frame_width, self._max_frame_height)
             
             with self._queue_not_full:
                 while len(self._frame_queue) == CAPTURED_FRAMES_QUEUE_SIZE:
@@ -128,17 +133,11 @@ class FrameProcessor:
                 frame = self._frame_queue.popleft()
                 self._queue_not_full.notify()
 
-
-            processed_frame = frame
-            processed_frame = self._image_processor.process_frame(
-                frame,
-                self._max_frame_width,
-                self._max_frame_height
-            )
-
+            detections = self._image_processor.detect_objects(frame)
+            frame, areTherePeople = self._image_processor.visualize_people_presence(frame, detections)
 
             with self._lock:
-                self._latest_frame = processed_frame
+                self._latest_frame = frame
             
 
     def naive(self) -> MatLike:
