@@ -9,6 +9,7 @@ import numpy as np
 from detector.app import App
 from detector.video_capture import VideoCapture
 
+
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
 CONFIDENCE_THRESHOLD = 0.75
 DEVICE = 'cuda'
@@ -21,7 +22,7 @@ class ImageProcessor:
 
     def set_detection_model(self, name: str):
         self._detector = YOLO(f'yolo_models/{name}')
-        self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize model completaly
+        self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
 
 
     def detect_objects(self, frame: MatLike):
