@@ -33,7 +33,12 @@ class VideoCapture:
         if self._video_capture is None:
             return None, None
         ret, frame = self._video_capture.read()
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        
+        if ret:
+            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        else:
+            print(self._video_capture.isOpened())
+
         return ret, frame
     
 

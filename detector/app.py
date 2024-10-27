@@ -15,7 +15,7 @@ class App:
 
     def run(self) -> None:
         self._gui.show()
-        self._frame_processor.remove_video_source()
+        self._frame_processor.shutdown()
 
 
     def set_video_source(self, source_id: int) -> None:

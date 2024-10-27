@@ -13,18 +13,6 @@ class FrameProcessor:
         self._video_capture = video_capture
         self._image_processor = image_processor
 
-        self._frame_queue = deque(maxlen=CAPTURED_FRAMES_QUEUE_SIZE)
-
-        self._lock = threading.Lock()
-        self._queue_not_empty = threading.Condition(self._lock)
-        self._queue_not_full = threading.Condition(self._lock)
-
-        self._capture_thread = None
-        self._is_capturing = False
-
-        self._processing_thread = None
-        self._is_processing = False
-
         self._latest_frame = None
         self._ret = False
 
@@ -33,27 +21,48 @@ class FrameProcessor:
         self._max_frame_width = 1920
         self._max_frame_height = 1080
 
+        self._frame_queue = deque(maxlen=CAPTURED_FRAMES_QUEUE_SIZE)
+
+        self._lock = threading.Lock()
+        self._queue_not_empty = threading.Condition(self._lock)
+        self._queue_not_full = threading.Condition(self._lock)
+        self._capture_event = threading.Event()
+        self._process_event = threading.Event()
+
+        self._continue_process_loop = True
+        self._continue_capture_loop = True
+
+        self._processing_thread = threading.Thread(target=self._process_frames)
+        self._capture_thread = threading.Thread(target=self._capture_frames)
+
+        self._processing_thread.start()
+        self._capture_thread.start()
+
 
     def set_max_frame_size(self, width, height) -> None:
         self._max_frame_width = width
         self._max_frame_height = height
 
+    
+    def shutdown(self):
+        self._continue_process_loop = False
+        self._continue_capture_loop = False
+        
+        with self._lock:
+            self._queue_not_empty.notify()
+            self._queue_not_full.notify()
+        
+        self._capture_thread.join()
+        self._processing_thread.join()
+
 
     def start_processing(self) -> None:
         self.stop_processing()
-
-        self._is_processing = True
-        self._processing_thread = threading.Thread(target=self._process_frames)
-        self._processing_thread.start()
+        self._process_event.set()
 
 
     def stop_processing(self) -> None:
-        with self._lock:
-            self._is_processing = False
-
-        if self._processing_thread is not None:
-            self._processing_thread.join()
-            self._processing_thread = None
+        self._process_event.clear()
 
 
     def remove_video_source(self) -> None:
@@ -81,33 +90,31 @@ class FrameProcessor:
 
 
     def _start_capture(self, source: int|str):
-        self._is_capturing = True
-        self._capture_thread = threading.Thread(target=self._capture_frames)
-        self._capture_thread.start()
+        self._capture_event.set()
 
 
     def _end_capture(self):
+        self._capture_event.clear()
+
         with self._lock:
-            self._is_capturing = False
             self._frame_queue.clear()
             self._queue_not_empty.notify_all()
             self._queue_not_full.notify_all()
-
-        if self._capture_thread is not None:
-            self._capture_thread.join()
-            self._capture_thread = None
 
 
     def _capture_frames(self) -> None:
         self._ret = True
 
-        while self._is_capturing:
+        while self._continue_capture_loop:
+            if not self._capture_event.is_set():
+                self._capture_event.wait()
+
+            capture_time_begin = time.perf_counter()
             is_capture_on, frame = self._video_capture.get_frame()
+            pure_capture_end = time.perf_counter()
 
             if not is_capture_on:
                 with self._lock:
-                    self._is_capturing = False
-                    self._is_processing = False
                     self._ret = False
                 break
 
@@ -123,12 +130,26 @@ class FrameProcessor:
                 self._frame_queue.append(frame)
                 self._queue_not_empty.notify()
 
+            capture_time_end = time.perf_counter()
+            capture_duration = capture_time_end - capture_time_begin
+            sleep_time = self._camera_seconds_per_frame - capture_duration
+            print(pure_capture_end - capture_time_begin, capture_duration, sleep_time)
+            
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+        
 
     def _process_frames(self) -> None:
-        while self._is_processing:
+        while self._continue_process_loop:
+            if not self._process_event.is_set():
+                self._process_event.wait()
+
             with self._queue_not_empty:
                 while not self._frame_queue:
                     self._queue_not_empty.wait()  
+
+                if not self._continue_process_loop:
+                    break
 
                 frame = self._frame_queue.popleft()
                 self._queue_not_full.notify()
@@ -138,24 +159,11 @@ class FrameProcessor:
 
             with self._lock:
                 self._latest_frame = frame
-            
+       
 
-    def naive(self) -> MatLike:
+    def get_latest_frame(self) -> MatLike:
         with self._lock:
             frame = self._latest_frame
             self._latest_frame = None
 
         return self._ret, frame
-
-
-    def get_latest_frame(self) -> MatLike:
-        return self.naive()
-
-        while True:
-            with self._lock:
-                if self._latest_frame is not None:
-                    frame = self._latest_frame
-                    self._latest_frame = None
-                    return frame
-
-            time.sleep(0.001)
