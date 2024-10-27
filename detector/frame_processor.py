@@ -36,6 +36,8 @@ class FrameProcessor:
         self._processing_thread = threading.Thread(target=self._process_frames)
         self._capture_thread = threading.Thread(target=self._capture_frames)
 
+        self._capture_event.clear()
+        self._process_event.clear()
         self._processing_thread.start()
         self._capture_thread.start()
 
@@ -49,14 +51,23 @@ class FrameProcessor:
         self._continue_process_loop = False
         self._continue_capture_loop = False
         
+        # Shutting down frame capture thread
+        self._capture_event.set()
         with self._lock:
             self._queue_not_empty.notify()
-            self._queue_not_full.notify()
-        
         self._capture_thread.join()
+        print('Capture frames thread joined')
+
+        # Shutting down frame process thread
+        self._process_event.set()
+        with self._lock:
+            self._queue_not_full.notify()
         self._processing_thread.join()
+        print('Process frames thread joined')
 
+        print("Shutdown completed")
 
+    
     def start_processing(self) -> None:
         self.stop_processing()
         self._process_event.set()
@@ -109,6 +120,8 @@ class FrameProcessor:
         while self._continue_capture_loop:
             if not self._capture_event.is_set():
                 self._capture_event.wait()
+                if not self._continue_capture_loop:
+                    return
 
             capture_time_begin = Timer.get_current_time()
             is_capture_on, frame = self._video_capture.get_frame()
@@ -144,13 +157,12 @@ class FrameProcessor:
         while self._continue_process_loop:
             if not self._process_event.is_set():
                 self._process_event.wait()
+                if not self._continue_process_loop:
+                    return
 
             with self._queue_not_empty:
                 while not self._frame_queue:
                     self._queue_not_empty.wait()  
-
-                if not self._continue_process_loop:
-                    break
 
                 frame = self._frame_queue.popleft()
                 self._queue_not_full.notify()
