@@ -3,9 +3,9 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 from cv2.typing import MatLike
 import numpy as np
-import time
 import math
 
+from detector.timer import Timer
 from detector.app import App
 from detector.frame_processor import FrameProcessor
 from detector.video_capture import VideoCapture, NO_VIDEO
@@ -23,10 +23,9 @@ class GUI:
         self._selected_video_source_id = None
         self._initialize_gui()
 
-        self._start_time = time.time()
         self._no_video_image = self._generate_black_image()
         self._frame_counter = 0
-        self._time_before_frame = time.perf_counter()
+        self._time_before_frame = Timer.get_current_time()
 
         self._video_source.set_max_frame_size(self._max_frame_width, self._max_frame_height)
 
@@ -94,15 +93,15 @@ class GUI:
 
     def show(self) -> None:
         self._show_frame(self._no_video_image)
-        self._time_before_frame = time.perf_counter()
+        self._time_before_frame = Timer.get_current_time()
         self._update_frame()
         self._root.mainloop()
 
 
     def _measure_time(self, func, *args, **kwargs):
-        time1 = time.perf_counter()
+        time1 = Timer.get_current_time()
         result = func(*args, **kwargs)
-        time2 = time.perf_counter()
+        time2 = Timer.get_current_time()
         duration = time2 - time1
         fps = 1 / duration if duration != 0 else 'inf'
 
@@ -140,7 +139,7 @@ class GUI:
     
 
     def _count_and_update_fps(self) -> None:
-        time_after_frame = time.perf_counter()
+        time_after_frame = Timer.get_current_time()
         duration = time_after_frame - self._time_before_frame
 
         if duration >= 1:

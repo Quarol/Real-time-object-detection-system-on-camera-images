@@ -1,8 +1,9 @@
 import threading
-import time
 from collections import deque
 from cv2.typing import MatLike
+import time
 
+from detector.timer import Timer
 from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
 
@@ -109,9 +110,9 @@ class FrameProcessor:
             if not self._capture_event.is_set():
                 self._capture_event.wait()
 
-            capture_time_begin = time.perf_counter()
+            capture_time_begin = Timer.get_current_time()
             is_capture_on, frame = self._video_capture.get_frame()
-            pure_capture_end = time.perf_counter()
+            pure_capture_end = Timer.get_current_time()
 
             if not is_capture_on:
                 with self._lock:
@@ -130,7 +131,7 @@ class FrameProcessor:
                 self._frame_queue.append(frame)
                 self._queue_not_empty.notify()
 
-            capture_time_end = time.perf_counter()
+            capture_time_end = Timer.get_current_time()
             capture_duration = capture_time_end - capture_time_begin
             sleep_time = self._camera_seconds_per_frame - capture_duration
             print(pure_capture_end - capture_time_begin, capture_duration, sleep_time)
