@@ -5,9 +5,11 @@ import set_repo_root
 
 from detector.app import App
 
-def main():
+
+def run_app():
     app = App()
     app.run()
 
+
 if __name__ == '__main__':
-    main()
+    run_app()

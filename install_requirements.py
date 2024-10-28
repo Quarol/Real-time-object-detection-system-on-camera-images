@@ -3,7 +3,8 @@ import sys
 
 default_packages = [
     'opencv-python==4.10.0.84',
-    'ultralytics==8.3.7'
+    'ultralytics==8.3.7',
+    'playsound==1.2.2'
 ]
 
 extended_packages = [
