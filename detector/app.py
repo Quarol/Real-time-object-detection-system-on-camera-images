@@ -1,4 +1,8 @@
+from playsound import playsound
+from concurrent.futures import ThreadPoolExecutor
+
 from detector.video_capture import VideoCapture, NO_VIDEO, VIDEO_FILE
+from detector.consts import ALERT_SOUND
 
 class App:
     def __init__(self) -> None:
@@ -6,6 +10,7 @@ class App:
         from detector.image_processor import ImageProcessor
         from detector.frame_processor import FrameProcessor
 
+        self._play_alert_executor = ThreadPoolExecutor(max_workers=1)
 
         self._video_capture = VideoCapture()
         self._image_processor = ImageProcessor()
@@ -15,7 +20,9 @@ class App:
 
     def run(self) -> None:
         self._gui.show()
+        self.play_alert()
         self._frame_processor.shutdown()
+        self.play_alert()
 
 
     def set_video_source(self, source_id: int) -> None:
@@ -32,3 +39,12 @@ class App:
         self._frame_processor.stop_processing()
         # code here
         self._frame_processor.start_processing()
+
+
+    def _play_alert(self):
+        playsound(ALERT_SOUND)
+        print('SOMEONE IS HERE!!!')
+
+
+    def notify_user(self):
+        self._play_alert_executor.submit(self._play_alert)
