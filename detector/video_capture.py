@@ -27,7 +27,7 @@ class VideoCapture:
         
 
     def is_capture_on(self) -> bool:
-        return self._video_capture is not None and self._video_capture.isOpened()
+        return self._video_capture is not None
     
 
     def get_frame(self):
@@ -42,7 +42,7 @@ class VideoCapture:
     
 
     def get_fps(self):
-        if self.is_capture_on():
+        if not self.is_capture_on():
             return None
         return self._video_capture.get(cv.CAP_PROP_FPS)
 

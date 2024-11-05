@@ -93,9 +93,9 @@ class FrameProcessor:
         capture_fps = self._video_capture.get_fps()
 
         if capture_fps is None:
+            self._video_capture.end_capture()
             return
         
-        print(capture_fps)
         self._camera_seconds_per_frame = 1 / capture_fps
         self._ret = True
 
