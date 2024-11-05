@@ -1,19 +1,13 @@
 import cv2 as cv
 from cv2.typing import MatLike
 from ultralytics import YOLO
-import torch
-import time
-import os
 import numpy as np
 
 from detector.app import App
 from detector.video_capture import VideoCapture
-
+from detector.system_settings import yolo_config
 
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
-CONFIDENCE_THRESHOLD = 0.83
-DEVICE = 'cuda'
-
 
 class ImageProcessor:
     def __init__(self) -> None:
@@ -28,9 +22,9 @@ class ImageProcessor:
     def detect_objects(self, frame: MatLike):
         results = self._detector.predict(
             frame,
-            conf=CONFIDENCE_THRESHOLD,
-            device=DEVICE,
-            verbose=False
+            conf=yolo_config.confidence_threshold,
+            device=yolo_config.device,
+            verbose=yolo_config.verbose
         ) # Returns list of output frames
         first_frame_result = results[0] # Get first (and only) frame
 
