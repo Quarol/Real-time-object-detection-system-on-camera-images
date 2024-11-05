@@ -7,7 +7,7 @@ from detector.timer import Timer
 from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
 
-CAPTURED_FRAMES_QUEUE_SIZE = 10  # Define a limit for frame queue size
+CAPTURED_FRAMES_QUEUE_SIZE = 1  # Define a limit for frame queue size
 
 class FrameProcessor:
     def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor) -> None:
@@ -95,8 +95,10 @@ class FrameProcessor:
         if capture_fps is None:
             return
         
+        print(capture_fps)
         self._camera_seconds_per_frame = 1 / capture_fps
         self._ret = True
+
         self._start_capture(source)
         self.start_processing()
 
@@ -125,12 +127,10 @@ class FrameProcessor:
 
             capture_time_begin = Timer.get_current_time()
             is_capture_on, frame = self._video_capture.get_frame()
-            pure_capture_end = Timer.get_current_time()
 
             if not is_capture_on:
-                with self._lock:
-                    self._ret = False
-                break
+                self.remove_video_source()
+                continue
 
             if frame is None:
                 continue
@@ -147,7 +147,6 @@ class FrameProcessor:
             capture_time_end = Timer.get_current_time()
             capture_duration = capture_time_end - capture_time_begin
             sleep_time = self._camera_seconds_per_frame - capture_duration
-            print(pure_capture_end - capture_time_begin, capture_duration, sleep_time)
             
             if sleep_time > 0:
                 time.sleep(sleep_time)

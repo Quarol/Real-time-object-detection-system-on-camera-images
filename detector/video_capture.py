@@ -23,6 +23,7 @@ class VideoCapture:
         if self._video_capture is None:
             return
         self._video_capture.release()
+        self._video_capture = None
         
 
     def is_capture_on(self) -> bool:
@@ -36,14 +37,12 @@ class VideoCapture:
         
         if ret:
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-        else:
-            print(self._video_capture.isOpened())
 
         return ret, frame
     
 
     def get_fps(self):
-        if self._video_capture is None:
+        if self.is_capture_on():
             return None
         return self._video_capture.get(cv.CAP_PROP_FPS)
 

@@ -11,7 +11,7 @@ from detector.video_capture import VideoCapture
 
 
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
-CONFIDENCE_THRESHOLD = 0.75
+CONFIDENCE_THRESHOLD = 0.83
 DEVICE = 'cuda'
 
 

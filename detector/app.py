@@ -20,9 +20,7 @@ class App:
 
     def run(self) -> None:
         self._gui.show()
-        self.play_alert()
         self._frame_processor.shutdown()
-        self.play_alert()
 
 
     def set_video_source(self, source_id: int) -> None:
