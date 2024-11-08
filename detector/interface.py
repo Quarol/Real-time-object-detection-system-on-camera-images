@@ -8,6 +8,7 @@ import math
 from detector.timer import Timer
 from detector.app import App
 from detector.frame_processor import FrameProcessor
+from detector.system_settings import yolo_config
 from detector.video_capture import VideoCapture, NO_VIDEO
 from detector.image_processor import ImageProcessor
 from detector.consts import MILLISECONDS_PER_FRAME
@@ -40,6 +41,7 @@ class GUI:
         self._menubar = tk.Menu(master=self._root)
         self._root.config(menu=self._menubar)
         self._initialize_video_source_menu()
+        self._initialize_detector_parameters_menu()
         self._initialize_video_player()
 
 
@@ -58,6 +60,37 @@ class GUI:
 
         self._selected_video_source_id.set(NO_VIDEO)
         self._menubar.add_cascade(menu=self._source_menu, label='Video source')
+
+    
+    def _initialize_detector_parameters_menu(self):
+        self._detector_menu = tk.Menu(master=self._menubar, tearoff=0)
+        self._menubar.add_cascade(menu=self._detector_menu, label='Detector Parameters')
+
+        self._detector_menu.add_command(
+            label="Show/Hide Confidence Threshold", 
+            command=self._toggle_slider_visibility
+        )
+
+        self._slider_frame = tk.Frame(self._root, bg="lightgray", relief="solid", bd=1)
+
+        self._label = tk.Label(self._slider_frame, text="Set Confidence Threshold")
+        self._label.pack(pady=5)
+
+        self._confidence_slider = tk.Scale(self._slider_frame, from_=0.00, to=1.00, resolution=0.01, orient='horizontal', command=self._update_confidence_threshold)
+        self._confidence_slider.set(0.50)
+        self._confidence_slider.pack(pady=10)
+
+
+    def _toggle_slider_visibility(self):
+        if self._slider_frame.winfo_ismapped():
+            self._slider_frame.place_forget()
+        else:
+            self._slider_frame.place(x=10, y=50)
+            self._slider_frame.lift()
+
+
+    def _update_confidence_threshold(self, value):
+        yolo_config.confidence_threshold = float(value)
 
 
     def _initialize_video_player(self) -> None:

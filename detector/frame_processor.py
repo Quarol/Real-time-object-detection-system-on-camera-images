@@ -50,20 +50,22 @@ class FrameProcessor:
     def shutdown(self):
         self._continue_process_loop = False
         self._continue_capture_loop = False
-        
-        # Shutting down frame capture thread
-        self._capture_event.set()
-        with self._lock:
-            self._queue_not_empty.notify()
-        self._capture_thread.join()
-        print('Capture frames thread joined')
 
-        # Shutting down frame process thread
+        self._capture_event.set()
         self._process_event.set()
+        
         with self._lock:
-            self._queue_not_full.notify()
+            self._queue_not_full.notify_all()
+            self._queue_not_empty.notify_all()
+
+        self._capture_thread.join()
+        print('Capture thread shot down')
+
+        with self._lock:
+            self._queue_not_empty.notify_all()
+
         self._processing_thread.join()
-        print('Process frames thread joined')
+        print('Process thread shot down')
 
         print("Shutdown completed")
 
@@ -99,11 +101,11 @@ class FrameProcessor:
         self._camera_seconds_per_frame = 1 / capture_fps
         self._ret = True
 
-        self._start_capture(source)
+        self._start_capture()
         self.start_processing()
 
 
-    def _start_capture(self, source: int|str):
+    def _start_capture(self):
         self._capture_event.set()
 
 

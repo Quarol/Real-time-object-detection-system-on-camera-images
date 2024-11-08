@@ -19,6 +19,10 @@ class ImageProcessor:
         self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
 
 
+    def set_confidence_threshold(confidence_threshold):
+        yolo_config.confidence_threshold = confidence_threshold
+
+
     def detect_objects(self, frame: MatLike):
         results = self._detector.predict(
             frame,
