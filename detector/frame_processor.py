@@ -10,9 +10,10 @@ from detector.video_capture import VideoCapture
 CAPTURED_FRAMES_QUEUE_SIZE = 1  # Define a limit for frame queue size
 
 class FrameProcessor:
-    def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor) -> None:
+    def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor, notification_function) -> None:
         self._video_capture = video_capture
         self._image_processor = image_processor
+        self._notification_function = notification_function
 
         self._latest_frame = None
         self._ret = False
@@ -169,10 +170,13 @@ class FrameProcessor:
                 self._queue_not_full.notify()
 
             detections = self._image_processor.detect_objects(frame)
-            frame, areTherePeople = self._image_processor.visualize_people_presence(frame, detections)
+            frame, areThereObjects = self._image_processor.visualize_people_presence(frame, detections)
 
             with self._lock:
                 self._latest_frame = frame
+
+            if areThereObjects:
+                self._notification_function()
        
 
     def get_latest_frame(self) -> MatLike:
