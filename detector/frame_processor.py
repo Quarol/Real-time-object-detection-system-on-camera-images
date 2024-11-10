@@ -170,12 +170,12 @@ class FrameProcessor:
                 self._queue_not_full.notify()
 
             detections = self._image_processor.detect_objects(frame)
-            frame, areThereObjects = self._image_processor.visualize_people_presence(frame, detections)
+            frame, are_there_objects = self._image_processor.visualize_objects_presence(frame, detections)
 
             with self._lock:
                 self._latest_frame = frame
 
-            if areThereObjects:
+            if are_there_objects:
                 self._notification_function()
        
 

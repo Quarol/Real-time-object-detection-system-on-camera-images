@@ -5,7 +5,8 @@ import numpy as np
 
 from detector.app import App
 from detector.video_capture import VideoCapture
-from detector.system_settings import yolo_config
+from detector.yolo_settings import yolo_config
+import yolo_settings
 
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
 
@@ -35,22 +36,41 @@ class ImageProcessor:
         return first_frame_result
 
 
-    def visualize_people_presence(self, frame: MatLike, detections):
+    def visualize_objects_presence(self, frame: MatLike, detections):
         boxes = detections.boxes
-        areTherePeople = False
+        are_there_objects = False
 
         for box in boxes:
-            if self._is_object_person:
-                areTherePeople = True
+            if self._shall_be_visualized(box):
+                are_there_objects = True
                 x_min, y_min, x_max, y_max = box.xyxy[0]
                 cv.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
 
-        return frame, areTherePeople
+                object_class_id = self._get_object_class_id(box) 
+                object_class_name = yolo_settings.get_class_name(object_class_id)
+
+                label_position = (int(x_min), int(y_min) - 10)
+                cv.putText(
+                    frame,                     
+                    object_class_name,         
+                    label_position,            
+                    cv.FONT_HERSHEY_SIMPLEX,   
+                    0.5,                       
+                    (0, 255, 0),               
+                    2,                         
+                    cv.LINE_AA                 
+                )
+
+        return frame, are_there_objects
     
 
-    def _is_object_person(self, box):
-        object_class = int(box.cls[0])
-        return object_class == 0
+    def _shall_be_visualized(self, box) -> bool:
+        object_class = self._get_object_class_id(box)
+        return object_class in yolo_config.classes
+    
+
+    def _get_object_class_id(self, box) -> int:
+        return int(box.cls[0])
 
 
     def fit_frame_into_screen(self, frame: MatLike, max_frame_width, max_frame_height):

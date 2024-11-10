@@ -8,7 +8,7 @@ import math
 from detector.timer import Timer
 from detector.app import App
 from detector.frame_processor import FrameProcessor
-from detector.system_settings import yolo_config
+from detector.yolo_settings import yolo_config
 from detector.video_capture import VideoCapture, NO_VIDEO
 from detector.image_processor import ImageProcessor
 from detector.consts import MILLISECONDS_PER_FRAME
