@@ -6,7 +6,7 @@ import numpy as np
 from detector.app import App
 from detector.video_capture import VideoCapture
 from detector.yolo_settings import yolo_config
-import yolo_settings
+import detector.yolo_settings
 
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
 
