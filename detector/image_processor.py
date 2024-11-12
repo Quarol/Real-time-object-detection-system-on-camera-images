@@ -5,8 +5,8 @@ import numpy as np
 
 from detector.app import App
 from detector.video_capture import VideoCapture
-from detector.yolo_settings import yolo_config
-import detector.yolo_settings
+from detector.yolo_settings import yolo_inference_config
+import detector.yolo_settings as yolo_settings
 
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
 
@@ -21,15 +21,16 @@ class ImageProcessor:
 
 
     def set_confidence_threshold(confidence_threshold):
-        yolo_config.confidence_threshold = confidence_threshold
+        yolo_inference_config.confidence_threshold = confidence_threshold
 
 
     def detect_objects(self, frame: MatLike):
         results = self._detector.predict(
             frame,
-            conf=yolo_config.confidence_threshold,
-            device=yolo_config.device,
-            verbose=yolo_config.verbose
+            conf=yolo_inference_config.confidence_threshold,
+            device=yolo_inference_config.device,
+            verbose=yolo_inference_config.verbose,
+            classes=yolo_inference_config.classes
         ) # Returns list of output frames
         first_frame_result = results[0] # Get first (and only) frame
 
@@ -66,7 +67,7 @@ class ImageProcessor:
 
     def _shall_be_visualized(self, box) -> bool:
         object_class = self._get_object_class_id(box)
-        return object_class in yolo_config.classes
+        return object_class in yolo_inference_config.classes
     
 
     def _get_object_class_id(self, box) -> int:

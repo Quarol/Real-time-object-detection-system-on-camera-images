@@ -1,6 +1,6 @@
 import cv2 as cv
 from cv2.typing import MatLike
-import time
+from typing import Tuple, Optional, Dict, Union
 
 MAX_NUMBER_OF_CAMERAS = 10
 
@@ -24,13 +24,9 @@ class VideoCapture:
             return
         self._video_capture.release()
         self._video_capture = None
-        
-
-    def is_capture_on(self) -> bool:
-        return self._video_capture is not None
     
 
-    def get_frame(self):
+    def get_frame(self) -> Tuple[Optional[bool], Optional[MatLike]]:
         if self._video_capture is None:
             return None, None
         ret, frame = self._video_capture.read()
@@ -41,14 +37,14 @@ class VideoCapture:
         return ret, frame
     
 
-    def get_fps(self):
-        if not self.is_capture_on():
+    def get_fps(self) -> float:
+        if self._video_capture is None:
             return None
         return self._video_capture.get(cv.CAP_PROP_FPS)
 
 
     @staticmethod
-    def get_available_sources():
+    def get_available_sources() -> Dict[str, int]:
         sources = {
             'No video': NO_VIDEO,
             'Video file': VIDEO_FILE

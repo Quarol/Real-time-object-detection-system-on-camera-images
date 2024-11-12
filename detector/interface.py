@@ -8,7 +8,7 @@ import math
 from detector.timer import Timer
 from detector.app import App
 from detector.frame_processor import FrameProcessor
-from detector.yolo_settings import yolo_config
+from detector.yolo_settings import yolo_inference_config
 from detector.video_capture import VideoCapture, NO_VIDEO
 from detector.image_processor import ImageProcessor
 from detector.consts import MILLISECONDS_PER_FRAME
@@ -90,7 +90,7 @@ class GUI:
 
 
     def _update_confidence_threshold(self, value):
-        yolo_config.confidence_threshold = float(value)
+        yolo_inference_config.confidence_threshold = float(value)
 
 
     def _initialize_video_player(self) -> None:
