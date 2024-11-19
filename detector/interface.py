@@ -1,17 +1,16 @@
 import tkinter as tk
 from tkinter import filedialog
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
 from cv2.typing import MatLike
 import numpy as np
-import math
 
 from detector.timer import Timer
 from detector.app import App
 from detector.frame_processor import FrameProcessor
 from detector.yolo_settings import yolo_inference_config
+import detector.yolo_settings as yolo_settings
 from detector.video_capture import VideoCapture, NO_VIDEO
 from detector.image_processor import ImageProcessor
-from detector.consts import MILLISECONDS_PER_FRAME
 
 VIDEO_FRAME_MARGIN = 10
 AFTER_DELAY = 1
@@ -28,21 +27,34 @@ class GUI:
         self._frame_counter = 0
         self._time_before_frame = Timer.get_current_time()
 
-        self._video_source.set_max_frame_size(self._max_frame_width, self._max_frame_height)
+        self._video_source.set_window_dimensions(self._max_frame_width, self._max_frame_height,
+                                                 self._min_frame_width, self._min_frame_height)
 
 
     def _initialize_gui(self) -> None:
         self._root = tk.Tk()
 
-        self._root.title('Pedestrian detector')
-        self._root.state('zoomed')
+        self._root.title('Object detector')
         self._root.resizable(False, False)
+
+        screen_space_factor = 0.70
+        screen = ImageGrab.grab()
+        screen_width, screen_height = screen.size
+
+        window_width = int(screen_width * screen_space_factor)
+        window_height = int(screen_height * screen_space_factor)
+
+        self._root.geometry(f'{window_width}x{window_height}') # Set window size
+        self._root.geometry(f'+{0}+{0}') # Set window position
 
         self._menubar = tk.Menu(master=self._root)
         self._root.config(menu=self._menubar)
         self._initialize_video_source_menu()
         self._initialize_detector_parameters_menu()
         self._initialize_video_player()
+
+        self._root_width = window_width
+        self._root_height = window_height
 
 
     def _initialize_video_source_menu(self) -> None:
@@ -67,30 +79,102 @@ class GUI:
         self._menubar.add_cascade(menu=self._detector_menu, label='Detector Parameters')
 
         self._detector_menu.add_command(
-            label="Show/Hide Confidence Threshold", 
-            command=self._toggle_slider_visibility
+            label="Show detector parameters", 
+            command=self._show_detector_parameters_window
         )
 
-        self._slider_frame = tk.Frame(self._root, bg="lightgray", relief="solid", bd=1)
 
-        self._label = tk.Label(self._slider_frame, text="Set Confidence Threshold")
-        self._label.pack(pady=5)
+    def _show_detector_parameters_window(self):
+        # Check if the window already exists
+        if hasattr(self, '_detector_parameters_window') and self._detector_parameters_window.winfo_exists():
+            self._detector_parameters_window.lift() 
+            return
+        
+        # Create a slider for confidence threshold
+        self._detector_parameters_window = tk.Toplevel(self._root)
+        self._detector_parameters_window.title('Detector Parameters')
 
-        self._confidence_slider = tk.Scale(self._slider_frame, from_=0.00, to=1.00, resolution=0.01, orient='horizontal', command=self._update_confidence_threshold)
-        self._confidence_slider.set(0.50)
-        self._confidence_slider.pack(pady=10)
+        width_scaling_factor = 0.36
+        height_scaling_factor = 0.5
+        window_width = int(self._root_width * width_scaling_factor)
+        window_height = int(self._root_height * height_scaling_factor)
 
+        self._detector_parameters_window.geometry(f'{window_width}x{window_height}')
+        self._detector_parameters_window.resizable(False, False)
 
-    def _toggle_slider_visibility(self):
-        if self._slider_frame.winfo_ismapped():
-            self._slider_frame.place_forget()
-        else:
-            self._slider_frame.place(x=10, y=50)
-            self._slider_frame.lift()
+        confidence_threshold_label = tk.Label(self._detector_parameters_window, text='Confidence threshold:')
+        confidence_threshold_label.pack(pady=1)
+
+        confidence_threshold_slider = tk.Scale(
+            self._detector_parameters_window,
+            from_=0.00,
+            to=1.00,
+            resolution=0.01,
+            orient='horizontal',
+            command=self._update_confidence_threshold
+        )
+        confidence_threshold_slider.set(yolo_inference_config.confidence_threshold)
+        confidence_threshold_slider.pack(pady=10)
+
+        # Create classes of object that will be detected:
+        classes_label = tk.Label(self._detector_parameters_window, text='Classes of objects:')
+        classes_label.pack(pady=1)
+
+        checkbox_canvas = tk.Canvas(self._detector_parameters_window)
+        checkbox_canvas.pack(side='left', fill='both', expand=True)
+
+        scrollbar = tk.Scrollbar(self._detector_parameters_window, orient='vertical', command=checkbox_canvas.yview)
+        scrollbar.pack(side='right', fill='y')
+
+        checkbox_canvas.configure(yscrollcommand=scrollbar.set)
+
+        checkbox_frame = tk.Frame(checkbox_canvas)
+        checkbox_canvas.create_window((0, 0), window=checkbox_frame, anchor='nw')
+
+        checkbox_vars = {}
+        row = 0
+        col = 0
+        max_items_per_row = 4
+        for index, class_name in yolo_settings.YOLO_CLASSES.items():
+            var = tk.BooleanVar(value=(index in yolo_inference_config.classes))
+            checkbox = tk.Checkbutton(
+                checkbox_frame,
+                text=class_name,
+                variable=var,
+                command=lambda idx=index, v=var: self._update_classes(idx, v)
+            )
+
+            # Place the checkbox in the grid (3 per row)
+            checkbox.grid(row=row, column=col, sticky='w', padx=5, pady=2)
+
+            checkbox_vars[index] = var
+
+            col += 1
+            if col == max_items_per_row:
+                col = 0
+                row += 1
+
+        checkbox_frame.update_idletasks()
+        checkbox_canvas.config(scrollregion=checkbox_canvas.bbox("all")) 
+
+        # Add moouse scroll event to object selection menu
+        def on_mouse_wheel(event):
+            if event.delta < 0:
+                checkbox_canvas.yview_scroll(1, 'units')
+            else:
+                checkbox_canvas.yview_scroll(-1, 'units')
+        self._detector_parameters_window.bind_all("<MouseWheel>", on_mouse_wheel)
 
 
     def _update_confidence_threshold(self, value):
         yolo_inference_config.confidence_threshold = float(value)
+
+
+    def _update_classes(self, class_index, var):
+        if var.get():
+            yolo_inference_config.add_detected_class(class_index)
+        else:
+            yolo_inference_config.remove_detected_class(class_index)
 
 
     def _initialize_video_player(self) -> None:
@@ -111,8 +195,11 @@ class GUI:
 
         self._root.update()
 
+        min_frame_scale_factor = 0.45 
         self._max_frame_width = self._video_frame.winfo_width()
         self._max_frame_height = self._video_frame.winfo_height()
+        self._min_frame_width = self._max_frame_width * min_frame_scale_factor
+        self._min_frame_height = self._max_frame_height * min_frame_scale_factor
 
 
     def select_video_file(self) -> str:

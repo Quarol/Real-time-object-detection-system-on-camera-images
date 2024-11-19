@@ -22,6 +22,8 @@ class FrameProcessor:
 
         self._max_frame_width = 1920
         self._max_frame_height = 1080
+        self._min_frame_width = self._max_frame_width * 0.5
+        self._min_frame_height = self._max_frame_height * 0.5
 
         self._frame_queue = deque(maxlen=CAPTURED_FRAMES_QUEUE_SIZE)
 
@@ -43,9 +45,12 @@ class FrameProcessor:
         self._capture_thread.start()
 
 
-    def set_max_frame_size(self, width, height) -> None:
-        self._max_frame_width = width
-        self._max_frame_height = height
+    def set_window_dimensions(self, max_width, max_height, min_width, min_height) -> None:
+        self._max_frame_width = max_width
+        self._max_frame_height = max_height
+
+        self._min_frame_width = min_width
+        self._min_frame_height = min_height
 
     
     def shutdown(self):
@@ -63,6 +68,7 @@ class FrameProcessor:
         print('Capture thread shot down')
 
         with self._lock:
+            self._queue_not_full.notify_all()
             self._queue_not_empty.notify_all()
 
         self._processing_thread.join()
@@ -138,7 +144,9 @@ class FrameProcessor:
             if frame is None:
                 continue
 
-            frame = self._image_processor.fit_frame_into_screen(frame, self._max_frame_width, self._max_frame_height)
+            frame = self._image_processor.fit_frame_into_screen(frame, 
+                                                                self._max_frame_width, self._max_frame_height,
+                                                                self._min_frame_width, self._min_frame_height)
             
             with self._queue_not_full:
                 while len(self._frame_queue) == CAPTURED_FRAMES_QUEUE_SIZE:
