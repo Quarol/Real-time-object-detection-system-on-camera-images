@@ -6,7 +6,7 @@ import numpy as np
 
 from detector.timer import Timer
 from detector.app import App
-from detector.frame_processor import FrameProcessor
+from detector.video_processor import VideoProcessor
 from detector.yolo_settings import yolo_inference_config
 import detector.yolo_settings as yolo_settings
 from detector.video_capture import VideoCapture, NO_VIDEO
@@ -16,7 +16,7 @@ VIDEO_FRAME_MARGIN = 10
 AFTER_DELAY = 1
 
 class GUI:
-    def __init__(self, parent_app: App, video_source: FrameProcessor) -> None:
+    def __init__(self, parent_app: App, video_source: VideoProcessor) -> None:
         self._parent_app = parent_app
         self._video_source = video_source
 

@@ -9,7 +9,7 @@ class App:
     def __init__(self) -> None:
         from detector.interface import GUI
         from detector.image_processor import ImageProcessor
-        from detector.frame_processor import FrameProcessor
+        from detector.video_processor import VideoProcessor
 
         self._play_alert_executor = ThreadPoolExecutor(max_workers=1)
 
@@ -18,7 +18,7 @@ class App:
 
         self._video_capture = VideoCapture()
         self._image_processor = ImageProcessor()
-        self._frame_processor = FrameProcessor(self._video_capture, self._image_processor, self._notify_user)
+        self._frame_processor = VideoProcessor(self._video_capture, self._image_processor, self._notify_user)
         self._gui = GUI(self, self._frame_processor)
 
 
