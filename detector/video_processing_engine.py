@@ -9,7 +9,7 @@ from detector.video_capture import VideoCapture
 
 CAPTURED_FRAMES_QUEUE_SIZE = 1  # Define a limit for frame queue size
 
-class VideoProcessor:
+class VideoProcessingEngine:
     def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor, notification_function) -> None:
         self._video_capture = video_capture
         self._image_processor = image_processor
