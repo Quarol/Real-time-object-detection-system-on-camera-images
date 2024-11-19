@@ -27,7 +27,6 @@ class App:
 
     def run(self) -> None:
         self._gui.show()
-        self._alert_event.clear()
         self._video_processing_engine.shutdown()
 
 

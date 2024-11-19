@@ -132,6 +132,7 @@ class VideoProcessingEngine:
         while self._continue_capture_loop:
             if not self._capture_event.is_set():
                 self._capture_event.wait()
+                # In case shutdown happened: end thread
                 if not self._continue_capture_loop:
                     return
 
@@ -151,7 +152,10 @@ class VideoProcessingEngine:
             
             with self._queue_not_full:
                 while len(self._frame_queue) == CAPTURED_FRAMES_QUEUE_SIZE:
-                    self._queue_not_full.wait() 
+                    self._queue_not_full.wait()
+                    # In case shutdown happened: end thread
+                    if not self._continue_capture_loop:
+                        return
 
                 self._frame_queue.append(frame)
                 self._queue_not_empty.notify()
@@ -168,12 +172,16 @@ class VideoProcessingEngine:
         while self._continue_process_loop:
             if not self._process_event.is_set():
                 self._process_event.wait()
+                # In case shutdown happened: end thread
                 if not self._continue_process_loop:
                     return
 
             with self._queue_not_empty:
                 while not self._frame_queue:
-                    self._queue_not_empty.wait()  
+                    self._queue_not_empty.wait()
+                    # In case shutdown happened: end thread
+                    if not self._continue_process_loop:  
+                        return
 
                 frame = self._frame_queue.popleft()
                 self._queue_not_full.notify()
