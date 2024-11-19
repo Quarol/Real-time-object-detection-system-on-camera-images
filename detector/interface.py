@@ -6,19 +6,16 @@ import numpy as np
 
 from detector.timer import Timer
 from detector.app import App
-from detector.video_processing_engine import VideoProcessingEngine
 from detector.yolo_settings import yolo_inference_config
 import detector.yolo_settings as yolo_settings
 from detector.video_capture import VideoCapture, NO_VIDEO
-from detector.image_processor import ImageProcessor
 
 VIDEO_FRAME_MARGIN = 10
 AFTER_DELAY = 1
 
 class GUI:
-    def __init__(self, parent_app: App, video_source: VideoProcessingEngine) -> None:
+    def __init__(self, parent_app: App) -> None:
         self._parent_app = parent_app
-        self._video_source = video_source
 
         self._selected_video_source_id = None
         self._initialize_gui()
@@ -27,8 +24,8 @@ class GUI:
         self._frame_counter = 0
         self._time_before_frame = Timer.get_current_time()
 
-        self._video_source.set_window_dimensions(self._max_frame_width, self._max_frame_height,
-                                                 self._min_frame_width, self._min_frame_height)
+        self._parent_app.set_frame_area_dimensions(self._max_frame_width, self._max_frame_height,
+                                                   self._min_frame_width, self._min_frame_height)
 
 
     def _initialize_gui(self) -> None:
@@ -240,7 +237,7 @@ class GUI:
 
 
     def _update_frame(self) -> None:
-        ret, frame = self._video_source.get_latest_frame()
+        ret, frame = self._parent_app.get_latest_frame()
 
         if ret == False:
             self._show_frame(self._no_video_image)

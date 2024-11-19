@@ -2,6 +2,7 @@ import threading
 from collections import deque
 from cv2.typing import MatLike
 import time
+from typing import Tuple, Optional
 
 from detector.timer import Timer
 from detector.image_processor import ImageProcessor
@@ -187,7 +188,7 @@ class VideoProcessingEngine:
                 self._notification_function()
        
 
-    def get_latest_frame(self) -> MatLike:
+    def get_latest_frame(self) -> Tuple[Optional[bool], Optional[MatLike]]:
         with self._lock:
             frame = self._latest_frame
             self._latest_frame = None

@@ -1,9 +1,9 @@
 import cv2 as cv
 from cv2.typing import MatLike
 from ultralytics import YOLO
-import numpy as np
+import ultralytics as ul
+from typing import Tuple, Optional
 
-from detector.app import App
 from detector.yolo_settings import yolo_inference_config
 import detector.yolo_settings as yolo_settings
 
@@ -14,13 +14,13 @@ class ImageProcessor:
         self.set_detection_model('yolov8n-pretrained-default.pt')
     
 
-    def set_detection_model(self, name: str):
+    def set_detection_model(self, name: str) -> None:
         self._detector = YOLO(f'yolo_models/{name}')
         yolo_settings.YOLO_CLASSES = self._detector.names
         self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
 
 
-    def set_confidence_threshold(confidence_threshold):
+    def set_confidence_threshold(confidence_threshold) -> None:
         yolo_inference_config.confidence_threshold = confidence_threshold
 
 
@@ -37,7 +37,7 @@ class ImageProcessor:
         return first_frame_result
 
 
-    def visualize_objects_presence(self, frame: MatLike, detections):
+    def visualize_objects_presence(self, frame: MatLike, detections) -> Tuple[MatLike, bool]:
         boxes = detections.boxes
         are_there_objects = False
 
@@ -68,7 +68,9 @@ class ImageProcessor:
         return int(box.cls[0])
 
 
-    def fit_frame_into_screen(self, frame: MatLike, max_frame_width, max_frame_height, min_frame_width, min_frame_height):
+    def fit_frame_into_screen(self, frame: MatLike,
+                              max_frame_width, max_frame_height,
+                              min_frame_width, min_frame_height) -> MatLike:
         if frame is None:
             return None
         
@@ -79,7 +81,7 @@ class ImageProcessor:
         return frame
 
 
-    def _fitting_dimensions(self, frame, max_width, max_height, min_width, min_height):
+    def _fitting_dimensions(self, frame, max_width, max_height, min_width, min_height) -> Tuple[int, int]:
         height, width = frame.shape[:2]
 
         # Case 1: frame fits

@@ -1,15 +1,18 @@
 from playsound import playsound
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from typing import Tuple, Optional
+from cv2.typing import MatLike
 
 from detector.video_capture import VideoCapture, NO_VIDEO, VIDEO_FILE
+from detector.image_processor import ImageProcessor
+from detector.video_processing_engine import VideoProcessingEngine
 from detector.consts import ALERT_SOUND
+
 
 class App:
     def __init__(self) -> None:
         from detector.interface import GUI
-        from detector.image_processor import ImageProcessor
-        from detector.video_processing_engine import VideoProcessingEngine
 
         self._play_alert_executor = ThreadPoolExecutor(max_workers=1)
 
@@ -18,37 +21,37 @@ class App:
 
         self._video_capture = VideoCapture()
         self._image_processor = ImageProcessor()
-        self._frame_processor = VideoProcessingEngine(self._video_capture, self._image_processor, self._notify_user)
-        self._gui = GUI(self, self._frame_processor)
+        self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor, self._notify_user)
+        self._gui = GUI(self)
 
 
     def run(self) -> None:
         self._gui.show()
-        self._frame_processor.shutdown()
+        self._alert_event.clear()
+        self._video_processing_engine.shutdown()
 
 
     def set_video_source(self, source_id: int) -> None:
         if source_id == NO_VIDEO:
-            self._frame_processor.remove_video_source()
+            self._video_processing_engine.remove_video_source()
         elif source_id == VIDEO_FILE:
             path = self._gui.select_video_file()
-            self._frame_processor.set_video_source(source=path)
+            self._video_processing_engine.set_video_source(source=path)
         else:
-            self._frame_processor.set_video_source(source=source_id)
+            self._video_processing_engine.set_video_source(source=source_id)
+
+    
+    def get_latest_frame(self) -> Tuple[Optional[bool], Optional[MatLike]]:
+        return self._video_processing_engine.get_latest_frame()
 
 
-    def change_model(self, path: str) -> None:
-        self._frame_processor.stop_processing()
-        # code here
-        self._frame_processor.start_processing()
+    def set_frame_area_dimensions(self, max_width, max_height, min_width, min_height) -> None:
+        self._video_processing_engine.set_window_dimensions(max_width, max_height, min_width, min_height)
 
 
     def _play_alert(self):
         self._alert_event.set()
-        
         playsound(ALERT_SOUND)
-        print('SOMEONE IS HERE!!!')
-
         self._alert_event.clear()
 
 
