@@ -50,6 +50,10 @@ class GUI:
         self._initialize_detector_parameters_menu()
         self._initialize_video_player()
 
+        # Initialize FPS label
+        self._fps_label = tk.Label(self._root, text="FPS: 0", font=("Helvetica", 12), bg="lightgray")
+        self._fps_label.place(relx=0.95, rely=0.05, anchor="ne")
+
         self._root_width = window_width
         self._root_height = window_height
 
@@ -263,7 +267,7 @@ class GUI:
 
         if duration >= 1:
             real_fps = self._frame_counter / duration if duration != 0 else 'inf'
-            #print(f'real_fps: {real_fps}')
+            self._fps_label.config(text=f"FPS: {real_fps:.2f}")
 
             self._time_before_frame = time_after_frame
             self._frame_counter = 0

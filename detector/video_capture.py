@@ -33,8 +33,8 @@ class VideoCapture:
         
         if ret:
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-        #else:
-        #    self.end_capture()
+        else:
+            self.end_capture()
 
         return ret, frame
     
@@ -42,7 +42,11 @@ class VideoCapture:
     def get_fps(self) -> float:
         if self._video_capture is None:
             return None
-        return self._video_capture.get(cv.CAP_PROP_FPS)
+        
+        fps = self._video_capture.get(cv.CAP_PROP_FPS)
+        if fps == 0:
+            return None
+        return fps
 
 
     @staticmethod
