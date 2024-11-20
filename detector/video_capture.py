@@ -2,8 +2,6 @@ import cv2 as cv
 from cv2.typing import MatLike
 from typing import Tuple, Optional, Dict, Union
 
-MAX_NUMBER_OF_CAMERAS = 10
-
 NO_VIDEO = -2
 VIDEO_FILE = -1
 # camera: >= 0
@@ -26,9 +24,9 @@ class VideoCapture:
         self._video_capture = None
     
 
-    def get_frame(self) -> Tuple[Optional[bool], Optional[MatLike]]:
+    def get_frame(self) -> Tuple[bool, Optional[MatLike]]:
         if self._video_capture is None:
-            return None, None
+            return False, None
         is_capture_on, frame = self._video_capture.read()
         
         if is_capture_on:
@@ -56,9 +54,14 @@ class VideoCapture:
             'Video file': VIDEO_FILE
         }
 
-        for i in range(MAX_NUMBER_OF_CAMERAS):
+        i = 0
+        while True:
             cap = cv.VideoCapture(i)
             if cap.isOpened():
                 sources[f'Camera {i}'] = i
                 cap.release()
+            else:
+                break
+            i += 1
+            
         return sources

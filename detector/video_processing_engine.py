@@ -1,7 +1,6 @@
 import threading
 from collections import deque
 from cv2.typing import MatLike
-import time
 from typing import Tuple, Optional
 
 from detector.timer import Timer
@@ -17,7 +16,7 @@ class VideoProcessingEngine:
         self._notification_function = notification_function
 
         self._latest_frame = None
-        self._ret = False
+        self._is_capture_on = False
 
         self._camera_seconds_per_frame = None
 
@@ -92,7 +91,7 @@ class VideoProcessingEngine:
         self.stop_processing()
         self._end_capture()
         self._video_capture.end_capture()
-        self._ret = False
+        self._is_capture_on = False
 
 
     def set_video_source(self, source: int|str) -> None:
@@ -108,7 +107,7 @@ class VideoProcessingEngine:
             return
         
         self._camera_seconds_per_frame = 1 / capture_fps
-        self._ret = True
+        self._is_capture_on = True
 
         self._start_capture()
         self.start_processing()
@@ -128,7 +127,7 @@ class VideoProcessingEngine:
 
 
     def _capture_frames(self) -> None:
-        self._ret = True
+        self._is_capture_on = True
 
         while self._continue_capture_loop:
             if not self._capture_event.is_set():
@@ -193,9 +192,9 @@ class VideoProcessingEngine:
                 self._notification_function()
        
 
-    def get_latest_frame(self) -> Tuple[Optional[bool], Optional[MatLike]]:
+    def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
         with self._lock:
             frame = self._latest_frame
             self._latest_frame = None
 
-        return self._ret, frame
+        return self._is_capture_on, frame

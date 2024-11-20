@@ -31,7 +31,7 @@ class App:
         self.shutdown_video_processing_engine()
 
     
-    def shutdown_video_processing_engine(self):
+    def shutdown_video_processing_engine(self) -> None:
         self._video_processing_engine.shutdown()
 
 
@@ -48,7 +48,7 @@ class App:
             self._video_processing_engine.set_video_source(source=source_id)
 
     
-    def get_latest_frame(self) -> Tuple[Optional[bool], Optional[MatLike]]:
+    def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
         return self._video_processing_engine.get_latest_frame()
 
 
@@ -56,12 +56,12 @@ class App:
         self._video_processing_engine.set_window_dimensions(max_width, max_height, min_width, min_height)
 
 
-    def _play_alert(self):
+    def _play_alert(self) -> None:
         self._alert_event.set()
         playsound(ALERT_SOUND)
         self._alert_event.clear()
 
 
-    def _notify_user(self):
+    def _notify_user(self) -> None:
         if not self._alert_event.is_set():
             self._play_alert_executor.submit(self._play_alert)
