@@ -55,6 +55,7 @@ class VideoProcessingEngine:
 
     
     def shutdown(self):
+        print('Begin shotdown')
         self._continue_process_loop = False
         self._continue_capture_loop = False
 

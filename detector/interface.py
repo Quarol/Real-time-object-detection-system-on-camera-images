@@ -241,6 +241,8 @@ class GUI:
 
         if ret == False:
             self._show_frame(self._no_video_image)
+            self._parent_app.set_video_source(NO_VIDEO)
+            self._selected_video_source_id.set(NO_VIDEO)
         else:
             if frame is not None:
                 self._show_frame(frame)

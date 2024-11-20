@@ -33,6 +33,8 @@ class VideoCapture:
         
         if ret:
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        #else:
+        #    self.end_capture()
 
         return ret, frame
     

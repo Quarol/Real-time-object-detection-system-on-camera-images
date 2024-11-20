@@ -27,6 +27,10 @@ class App:
 
     def run(self) -> None:
         self._gui.show()
+        self.shutdown_video_processing_engine()
+
+    
+    def shutdown_video_processing_engine(self):
         self._video_processing_engine.shutdown()
 
 
