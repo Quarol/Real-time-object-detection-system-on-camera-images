@@ -29,14 +29,14 @@ class VideoCapture:
     def get_frame(self) -> Tuple[Optional[bool], Optional[MatLike]]:
         if self._video_capture is None:
             return None, None
-        ret, frame = self._video_capture.read()
+        is_capture_on, frame = self._video_capture.read()
         
-        if ret:
+        if is_capture_on:
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         else:
             self.end_capture()
 
-        return ret, frame
+        return is_capture_on, frame
     
 
     def get_fps(self) -> float:

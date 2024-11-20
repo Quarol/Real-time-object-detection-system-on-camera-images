@@ -3,6 +3,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple, Optional
 from cv2.typing import MatLike
+import os
 
 from detector.video_capture import VideoCapture, NO_VIDEO, VIDEO_FILE
 from detector.image_processor import ImageProcessor
@@ -39,7 +40,10 @@ class App:
             self._video_processing_engine.remove_video_source()
         elif source_id == VIDEO_FILE:
             path = self._gui.select_video_file()
-            self._video_processing_engine.set_video_source(source=path)
+            if os.path.exists(path) and os.path.isfile(path):
+                self._video_processing_engine.set_video_source(source=path)
+            else:
+                self._gui.set_video_source(source_id)
         else:
             self._video_processing_engine.set_video_source(source=source_id)
 

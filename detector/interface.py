@@ -75,6 +75,10 @@ class GUI:
         self._menubar.add_cascade(menu=self._source_menu, label='Video source')
 
     
+    def set_video_source(self, source_id: int):
+        self._selected_video_source_id.set(source_id)
+
+    
     def _initialize_detector_parameters_menu(self):
         self._detector_menu = tk.Menu(master=self._menubar, tearoff=0)
         self._menubar.add_cascade(menu=self._detector_menu, label='Detector Parameters')
@@ -217,19 +221,6 @@ class GUI:
         self._time_before_frame = Timer.get_current_time()
         self._update_frame()
         self._root.mainloop()
-
-
-    def _measure_time(self, func, *args, **kwargs):
-        time1 = Timer.get_current_time()
-        result = func(*args, **kwargs)
-        time2 = Timer.get_current_time()
-        duration = time2 - time1
-        fps = 1 / duration if duration != 0 else 'inf'
-
-        print(f'Duration: {duration}s', end='')
-        print(f', FPS: {fps}')
-
-        return result
 
 
     def _show_frame(self, frame: MatLike) -> None:

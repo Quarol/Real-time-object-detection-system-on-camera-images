@@ -55,7 +55,7 @@ class VideoProcessingEngine:
 
     
     def shutdown(self):
-        print('Begin shotdown')
+        print('Begin shutdown of threads')
         self._continue_process_loop = False
         self._continue_capture_loop = False
 
@@ -137,7 +137,7 @@ class VideoProcessingEngine:
                 if not self._continue_capture_loop:
                     return
 
-            capture_time_begin = Timer.get_current_time()
+            time1 = Timer.get_current_time()
             is_capture_on, frame = self._video_capture.get_frame()
 
             if not is_capture_on:
@@ -161,13 +161,9 @@ class VideoProcessingEngine:
                 self._frame_queue.append(frame)
                 self._queue_not_empty.notify()
 
-            capture_time_end = Timer.get_current_time()
-            capture_duration = capture_time_end - capture_time_begin
-            sleep_time = self._camera_seconds_per_frame - capture_duration
-            
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-        
+            duration = Timer.get_duration(time1)
+            print(duration)
+
 
     def _process_frames(self) -> None:
         while self._continue_process_loop:
