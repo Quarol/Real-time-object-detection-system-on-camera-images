@@ -1,6 +1,6 @@
 import cv2 as cv
 from cv2.typing import MatLike
-from typing import Tuple, Optional, Dict, Union
+from typing import Tuple, Optional, Dict
 
 NO_VIDEO = -2
 VIDEO_FILE = -1
@@ -14,6 +14,7 @@ class VideoCapture:
 
 
     def start_capture(self, source: int|str) -> None:
+        self.end_capture()
         self._video_capture = cv.VideoCapture(source)
 
 

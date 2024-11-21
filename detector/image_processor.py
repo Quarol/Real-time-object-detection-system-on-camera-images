@@ -1,13 +1,14 @@
 import cv2 as cv
 from cv2.typing import MatLike
 from ultralytics import YOLO
-import ultralytics as ul
-from typing import Tuple, Optional
+from ultralytics.engine.results import Results
+from typing import Tuple
 
 from detector.yolo_settings import yolo_inference_config
 import detector.yolo_settings as yolo_settings
 
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
+WARMP_UP_ITERATIONS = 30
 
 class ImageProcessor:
     def __init__(self) -> None:
@@ -17,14 +18,15 @@ class ImageProcessor:
     def set_detection_model(self, name: str) -> None:
         self._detector = YOLO(f'yolo_models/{name}')
         yolo_settings.YOLO_CLASSES = self._detector.names
-        self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
+        for i in range(WARMP_UP_ITERATIONS):
+            self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
 
 
     def set_confidence_threshold(confidence_threshold) -> None:
-        yolo_inference_config.confidence_threshold = confidence_threshold
+        yolo_inference_config.set_confidence_threshold(confidence_threshold)
 
 
-    def detect_objects(self, frame: MatLike):
+    def detect_objects(self, frame: MatLike) -> Results:
         results = self._detector.predict(
             frame,
             conf=yolo_inference_config.confidence_threshold,
@@ -33,6 +35,7 @@ class ImageProcessor:
             verbose=yolo_inference_config.verbose
         ) # Returns list of output frames
         first_frame_result = results[0] # Get first (and only) frame
+        print(type(results), type(first_frame_result), len(results))
 
         return first_frame_result
 

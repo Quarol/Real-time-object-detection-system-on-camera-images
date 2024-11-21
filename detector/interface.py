@@ -172,7 +172,7 @@ class GUI:
 
 
     def _update_confidence_threshold(self, value):
-        yolo_inference_config.confidence_threshold = float(value)
+        yolo_inference_config.set_confidence_threshold(float(value))
 
 
     def _update_classes(self, class_index, var):
