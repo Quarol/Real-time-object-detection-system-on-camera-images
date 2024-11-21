@@ -22,10 +22,6 @@ class ImageProcessor:
             self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
 
 
-    def set_confidence_threshold(confidence_threshold) -> None:
-        yolo_inference_config.set_confidence_threshold(confidence_threshold)
-
-
     def detect_objects(self, frame: MatLike) -> Results:
         results = self._detector.predict(
             frame,
@@ -35,7 +31,6 @@ class ImageProcessor:
             verbose=yolo_inference_config.verbose
         ) # Returns list of output frames
         first_frame_result = results[0] # Get first (and only) frame
-        print(type(results), type(first_frame_result), len(results))
 
         return first_frame_result
 

@@ -6,7 +6,7 @@ from typing import Tuple, Optional, Callable
 from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
 
-CAPTURED_FRAMES_QUEUE_SIZE = 1
+CAPTURED_FRAMES_QUEUE_SIZE = 5
 
 class VideoProcessingEngine:
     def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor,
