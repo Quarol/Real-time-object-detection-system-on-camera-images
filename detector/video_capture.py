@@ -43,7 +43,7 @@ class VideoCapture:
             return None
         
         fps = self._video_capture.get(cv.CAP_PROP_FPS)
-        if fps == 0:
+        if fps <= 0:
             return None
         return fps
 

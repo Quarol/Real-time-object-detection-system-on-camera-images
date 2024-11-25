@@ -5,6 +5,7 @@ class YoloInferenceConfig:
         self.confidence_threshold = 0.5
         self.device = 'cuda'
         self.classes = [0] # people by default
+        self.max_det = 50
         self.verbose = False
 
     def add_detected_class(self, object_index: int) -> None:
@@ -14,7 +15,7 @@ class YoloInferenceConfig:
         self.classes.remove(object_index)
 
     def set_confidence_threshold(self, confidence_threshold: float) -> None:
-        self.confidence_threshold = confidence_threshold 
+        self.confidence_threshold = confidence_threshold
     
 YOLO_CLASSES = {}
 yolo_inference_config = YoloInferenceConfig()

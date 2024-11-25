@@ -8,7 +8,7 @@ from detector.yolo_settings import yolo_inference_config
 import detector.yolo_settings as yolo_settings
 
 WARM_UP_IMAGE = 'demo_assets/people.jpg'
-WARMP_UP_ITERATIONS = 30
+WARMP_UP_ITERATIONS = 100
 
 class ImageProcessor:
     def __init__(self) -> None:
@@ -28,19 +28,16 @@ class ImageProcessor:
             conf=yolo_inference_config.confidence_threshold,
             device=yolo_inference_config.device,
             classes=yolo_inference_config.classes,
+            max_det=yolo_inference_config.max_det,
             verbose=yolo_inference_config.verbose
         ) # Returns list of output frames
         first_frame_result = results[0] # Get first (and only) frame
 
-        return first_frame_result
+        return first_frame_result, len(first_frame_result.boxes) > 0 
 
 
-    def visualize_objects_presence(self, frame: MatLike, detections) -> Tuple[MatLike, bool]:
-        boxes = detections.boxes
-        are_there_objects = False
-
-        for box in boxes:
-            are_there_objects = True
+    def visualize_objects_presence(self, frame: MatLike, detections: Results) -> Tuple[MatLike, bool]:
+        for box in detections.boxes:
             x_min, y_min, x_max, y_max = box.xyxy[0]
             cv.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
 
@@ -59,8 +56,8 @@ class ImageProcessor:
                 cv.LINE_AA                 
             )
 
-        return frame, are_there_objects
-
+        return frame
+    
 
     def _get_object_class_id(self, box) -> int:
         return int(box.cls[0])

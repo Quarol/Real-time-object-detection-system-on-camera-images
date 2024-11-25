@@ -3,14 +3,17 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple, Optional
 from cv2.typing import MatLike
+
 import os
+import time
 
 from detector.video_capture import VideoCapture, NO_VIDEO, VIDEO_FILE
 from detector.image_processor import ImageProcessor
 from detector.video_processing_engine import VideoProcessingEngine
+from detector.yolo_settings import yolo_inference_config
+import detector.yolo_settings as yolo_settings
 
 ALERT_SOUND = 'assets/alert.wav'
-
 
 class App:
     def __init__(self) -> None:
@@ -40,17 +43,13 @@ class App:
         elif source_id == VIDEO_FILE:
             path = self._gui.select_video_file()
             if os.path.exists(path) and os.path.isfile(path):
-                set_successfully = self._video_processing_engine.set_video_source(source=path)
-                if not set_successfully:
-                    self._gui.set_video_source(NO_VIDEO)
+                self._video_processing_engine.set_video_source(source=path)
             else:
                 self._gui.set_video_source(source_id)
                 self._video_processing_engine.remove_video_source()
                 
         else:
-            set_successfully = self._video_processing_engine.set_video_source(source=source_id)
-            if not set_successfully:
-                self._gui.set_video_source(NO_VIDEO)
+            self._video_processing_engine.set_video_source(source=source_id)
 
     
     def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
@@ -60,6 +59,34 @@ class App:
     def set_frame_area_dimensions(self, max_width: int, max_height: int, min_width: int, min_height: int) -> None:
         self._video_processing_engine.set_window_dimensions(max_width, max_height, min_width, min_height)
 
+
+    def get_available_classes_in_dictionary(self):
+        return yolo_settings.YOLO_CLASSES
+
+
+    def add_detected_class(self, class_index: int) -> None:
+        yolo_inference_config.add_detected_class(class_index)
+
+    
+    def remove_detected_class(self, class_index: int) -> None:
+        yolo_inference_config.remove_detected_class(class_index)
+
+    
+    def set_confidence_threshold(self, confidence_threshold: float) -> None:
+        yolo_inference_config.set_confidence_threshold(confidence_threshold)
+
+    
+    def get_detected_classes(self):
+        return yolo_inference_config.classes
+
+
+    def get_confidence_threshold(self) -> float:
+        return yolo_inference_config.confidence_threshold
+
+
+    def get_available_sources(self):
+        return VideoCapture.get_available_sources()
+    
 
     def _play_alert(self) -> None:
         self._alert_event.set()

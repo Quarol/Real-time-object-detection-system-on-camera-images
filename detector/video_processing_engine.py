@@ -2,11 +2,13 @@ import threading
 from collections import deque
 from cv2.typing import MatLike
 from typing import Tuple, Optional, Callable
+import time
 
 from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
+from detector.timer import Timer
 
-CAPTURED_FRAMES_QUEUE_SIZE = 5
+CAPTURED_FRAMES_QUEUE_SIZE = 1
 
 class VideoProcessingEngine:
     def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor,
@@ -18,8 +20,6 @@ class VideoProcessingEngine:
         self._latest_frame = None
         self._is_capture_on = False
 
-        self._camera_seconds_per_frame = None
-
         self._max_frame_width = 1920
         self._max_frame_height = 1080
         self._min_frame_width = self._max_frame_width * 0.5
@@ -27,17 +27,18 @@ class VideoProcessingEngine:
 
         self._frame_queue = deque(maxlen=CAPTURED_FRAMES_QUEUE_SIZE)
 
+        self._frame_set_lock = threading.Lock()
         self._video_capture_lock = threading.Lock()
-        self._lock = threading.Lock()
-        self._queue_not_empty = threading.Condition(self._lock)
-        self._queue_not_full = threading.Condition(self._lock)
+        self._queue_lock = threading.Lock()
+        self._queue_not_empty = threading.Condition(self._queue_lock)
+        self._queue_not_full = threading.Condition(self._queue_lock)
         self._capture_event = threading.Event()
         self._process_event = threading.Event()
 
         self._continue_thread_loop = True
 
-        self._processing_thread = threading.Thread(target=self._process_frames)
-        self._capture_thread = threading.Thread(target=self._capture_frames)
+        self._processing_thread = threading.Thread(target=self._process_frames, daemon=True)
+        self._capture_thread = threading.Thread(target=self._capture_frames, daemon=True)
 
         self._capture_event.clear()
         self._process_event.clear()
@@ -57,25 +58,21 @@ class VideoProcessingEngine:
 
     
     def shutdown(self) -> None:
-        print('Begin shutdown of threads')
+        print('Begin shutdown of video processing engine')
         self._continue_thread_loop = False
-        
-        with self._lock:
-            self._process_event.clear()
-            self._capture_event.set()
-        
-            self._queue_not_full.notify_all()
+        self._capture_event.clear()
+        self._process_event.clear()
+
+        with self._queue_lock:
             self._queue_not_empty.notify_all()
-        self._capture_thread.join()
-        print('Capture thread shot down')
-
-        with self._lock:
-            self._process_event.set()
             self._queue_not_full.notify_all()
-        self._processing_thread.join()
-        print('Process thread shot down')
+        
+        self.remove_video_source()
 
-        print("Shutdown completed")
+        print('Cleanup variables')
+        self.remove_video_source()
+
+        print('End of cleanup, waiting for main thread to shut down deamon threads')
 
     
     def _start_processing(self) -> None:
@@ -88,30 +85,22 @@ class VideoProcessingEngine:
 
 
     def remove_video_source(self) -> None:
+        self._is_capture_on = False
+        self._stop_processing()
+
         with self._video_capture_lock:
-            self._stop_processing()
             self._end_capture()
             self._video_capture.end_capture()
-            self._is_capture_on = False
 
 
-    def set_video_source(self, source: int|str) -> bool:
+    def set_video_source(self, source: int|str) -> None:
         self.remove_video_source()
 
         self._video_capture.start_capture(source)
-        capture_fps = self._video_capture.get_fps()
-
-        if capture_fps is None:
-            self._video_capture.end_capture()
-            return False
-        
-        self._camera_seconds_per_frame = 1 / capture_fps
         self._is_capture_on = True
 
         self._start_capture()
         self._start_processing()
-
-        return True
 
 
     def _start_capture(self) -> None:
@@ -121,15 +110,13 @@ class VideoProcessingEngine:
     def _end_capture(self) -> None:
         self._capture_event.clear()
 
-        with self._lock:
+        with self._queue_lock:
             self._frame_queue.clear()
             self._queue_not_empty.notify_all()
             self._queue_not_full.notify_all()
 
 
     def _capture_frames(self) -> None:
-        self._is_capture_on = True
-
         while self._continue_thread_loop:
             if not self._capture_event.is_set():
                 self._capture_event.wait()
@@ -171,7 +158,7 @@ class VideoProcessingEngine:
                     return
 
             with self._queue_not_empty:
-                while not self._frame_queue:
+                while not self._frame_queue: # If queue is empty
                     self._queue_not_empty.wait()
                     # In case shutdown happened: end thread
                     if not self._continue_thread_loop:  
@@ -180,19 +167,28 @@ class VideoProcessingEngine:
                 frame = self._frame_queue.popleft()
                 self._queue_not_full.notify()
 
-            detections = self._image_processor.detect_objects(frame)
-            frame, are_there_objects = self._image_processor.visualize_objects_presence(frame, detections)
 
-            with self._lock:
-                self._latest_frame = frame
+            start = Timer.get_current_time()
+            detections, are_there_objects = self._image_processor.detect_objects(frame)
+            stop_detect = Timer.get_current_time()
+            frame = self._image_processor.visualize_objects_presence(frame, detections)
+            stop = Timer.get_current_time()
+
+            total_duration = Timer.get_duration(start, stop)
+            detection_duration = Timer.get_duration(start, stop_detect)
+            draw_duration = Timer.get_duration(stop_detect, stop)
 
             if are_there_objects:
                 self._notification_function()
        
+            with self._frame_set_lock:
+                self._latest_frame = frame
+            
 
     def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
-        with self._lock:
+        with self._frame_set_lock:
+            is_capture_on = self._is_capture_on
             frame = self._latest_frame
             self._latest_frame = None
 
-        return self._is_capture_on, frame
+        return is_capture_on, frame

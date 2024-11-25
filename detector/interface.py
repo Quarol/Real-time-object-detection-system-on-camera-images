@@ -6,9 +6,7 @@ import numpy as np
 
 from detector.timer import Timer
 from detector.app import App
-from detector.yolo_settings import yolo_inference_config
-import detector.yolo_settings as yolo_settings
-from detector.video_capture import VideoCapture, NO_VIDEO
+from detector.video_capture import NO_VIDEO
 
 VIDEO_FRAME_MARGIN = 10
 AFTER_DELAY = 1
@@ -62,7 +60,7 @@ class GUI:
         self._source_menu = tk.Menu(master=self._menubar, tearoff=0)
         self._selected_video_source_id = tk.IntVar()
 
-        sources = VideoCapture.get_available_sources()
+        sources = self._parent_app.get_available_sources()
         for source_name in sources:
             self._source_menu.add_radiobutton(
                 label=source_name,
@@ -118,7 +116,9 @@ class GUI:
             orient='horizontal',
             command=self._update_confidence_threshold
         )
-        confidence_threshold_slider.set(yolo_inference_config.confidence_threshold)
+        confidence_threshold_slider.set(
+            self._parent_app.get_confidence_threshold()
+        )
         confidence_threshold_slider.pack(pady=10)
 
         # Create classes of object that will be detected:
@@ -140,8 +140,10 @@ class GUI:
         row = 0
         col = 0
         max_items_per_row = 4
-        for index, class_name in yolo_settings.YOLO_CLASSES.items():
-            var = tk.BooleanVar(value=(index in yolo_inference_config.classes))
+        all_classes = self._parent_app.get_available_classes_in_dictionary()
+        detected_classes = self._parent_app.get_detected_classes()
+        for index, class_name in all_classes.items():
+            var = tk.BooleanVar(value=(index in detected_classes))
             checkbox = tk.Checkbutton(
                 checkbox_frame,
                 text=class_name,
@@ -172,14 +174,14 @@ class GUI:
 
 
     def _update_confidence_threshold(self, value):
-        yolo_inference_config.set_confidence_threshold(float(value))
+        self._parent_app.set_confidence_threshold(float(value))
 
 
     def _update_classes(self, class_index, var):
         if var.get():
-            yolo_inference_config.add_detected_class(class_index)
+            self._parent_app.add_detected_class(class_index)
         else:
-            yolo_inference_config.remove_detected_class(class_index)
+            self._parent_app.remove_detected_class(class_index)
 
 
     def _initialize_video_player(self) -> None:
@@ -234,14 +236,14 @@ class GUI:
     def _update_frame(self) -> None:
         ret, frame = self._parent_app.get_latest_frame()
 
-        if ret == False:
-            self._show_frame(self._no_video_image)
-            self._parent_app.set_video_source(NO_VIDEO)
-            self._selected_video_source_id.set(NO_VIDEO)
-        else:
+        if ret:
             if frame is not None:
                 self._show_frame(frame)
                 self._frame_counter += 1
+        else:
+            self._show_frame(self._no_video_image)
+            self._parent_app.set_video_source(NO_VIDEO)
+            self._selected_video_source_id.set(NO_VIDEO)
 
         self._count_and_update_fps()
         self._video_frame.after(AFTER_DELAY, self._update_frame)
