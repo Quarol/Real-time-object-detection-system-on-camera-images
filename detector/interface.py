@@ -4,6 +4,7 @@ from PIL import Image, ImageTk, ImageGrab
 import cv2 as cv
 from cv2.typing import MatLike
 import numpy as np
+import time
 
 from detector.timer import Timer
 from detector.app import App
@@ -22,7 +23,6 @@ class GUI:
         screen_width = int(frame_display_scaling_factor * screen_width)
         screen_height = int(frame_display_scaling_factor * screen_height)
         self._parent_app.set_frame_area_dimensions(screen_width, screen_height)
-        self._no_video_image = self._generate_black_image(screen_width, screen_height)
 
         self._selected_video_source_id = None
         self._initialize_settings_gui()
@@ -30,12 +30,8 @@ class GUI:
         self._frame_counter = 0
         self._time_before_frame = None
         self._fps_label_value = 'FPS: 00.00'
-
+        self._is_displaying = None
         
-    def _generate_black_image(self, max_width, max_height) -> MatLike:
-        black_image = np.zeros((max_height, max_width, 3), dtype=np.uint8)
-        return black_image
-
 
     def _initialize_settings_gui(self) -> None:
         self._root = tk.Tk()
@@ -68,17 +64,33 @@ class GUI:
                 label=source_name,
                 variable=self._selected_video_source_id,
                 value=sources[source_name],
-                command=lambda source_index=sources[source_name]: self._parent_app.set_video_source(source_index)
+                command=lambda source_index=sources[source_name]: self._on_video_source_select(source_index)
             )
 
         self._selected_video_source_id.set(NO_VIDEO)
         self._menubar.add_cascade(menu=self._source_menu, label='Video source')
 
 
-    def set_video_source(self, source_id: int):
+    def _on_video_source_select(self, source_id: int):
+        is_source_on = self._parent_app.set_video_source(source_id)
         self._selected_video_source_id.set(source_id)
 
+        if is_source_on:
+            self._is_displaying = True
+            self._update_frame()
+        else:
+            self._stop_displaying()
+
+
+    def _start_displaying(self):
+        self._is_displaying = True
+        self._update_frame()
+
+
+    def _stop_displaying(self):
+        self._is_displaying = False
     
+
     def _initialize_detector_parameters_menu(self):
         # This part is now moved to the main window
         self._detector_frame = tk.Frame(self._root)
@@ -189,12 +201,15 @@ class GUI:
 
     def _show_frame(self, frame: MatLike) -> None:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-        print(frame)
-        #cv.putText(frame, self._fps_label_value, (30, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv.LINE_AA)
-        #cv.imshow('Frames', frame)
+        cv.putText(frame, self._fps_label_value, (30, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv.LINE_AA)
+        cv.imshow('Display', frame)
 
 
     def _update_frame(self) -> None:
+        if not self._is_displaying:
+            cv.destroyAllWindows()
+            return
+
         is_capture_on, frame = self._parent_app.get_latest_frame()
 
         if is_capture_on:
@@ -206,12 +221,12 @@ class GUI:
                 self._frame_counter += 1
         else:
             self._time_before_frame = None
-            self._show_frame(self._no_video_image)
             self._parent_app.set_video_source(NO_VIDEO)
             self._selected_video_source_id.set(NO_VIDEO)
+            self._stop_displaying()
 
         self._count_and_update_fps(is_capture_on)
-        self._video_frame.after(AFTER_DELAY, self._update_frame)
+        self._root.after(AFTER_DELAY, self._update_frame)
     
 
     def _count_and_update_fps(self, is_capture_on) -> None:
@@ -230,4 +245,3 @@ class GUI:
 
         if not is_capture_on:
             self._fps_label_value = f'FPS: 00.00'
-            self._show_frame(self._no_video_image)

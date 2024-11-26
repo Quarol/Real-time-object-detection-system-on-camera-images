@@ -25,10 +25,9 @@ class App:
 
         self._video_capture = VideoCapture()
         self._image_processor = ImageProcessor()
-        self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor,
-                                                              self._notify_user, self._display_frame)
+        self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor, self._notify_user)
         
-        frame_display_scaling_factor = 1.0
+        frame_display_scaling_factor = 0.8
         self._gui = GUI(self, frame_display_scaling_factor)
 
 
@@ -37,25 +36,24 @@ class App:
         self._gui.show()
         self._video_processing_engine.shutdown()
 
-    
-    def _display_frame(self, frame: MatLike) -> None:
-        self._gui._show_frame(frame)
 
-
-    def set_video_source(self, source_id: int) -> None:
+    def set_video_source(self, source_id: int) -> bool:
         if source_id == NO_VIDEO:
             self._video_processing_engine.remove_video_source()
+            return False
 
         elif source_id == VIDEO_FILE:
             path = self._gui.select_video_file()
             if os.path.exists(path) and os.path.isfile(path):
                 self._video_processing_engine.set_video_source(source=path)
+                return True
             else:
-                self._gui.set_video_source(source_id)
                 self._video_processing_engine.remove_video_source()
-                
+                return False
+
         else:
             self._video_processing_engine.set_video_source(source=source_id)
+            return True
 
     
     def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
