@@ -1,5 +1,4 @@
 import threading
-from collections import deque
 from cv2.typing import MatLike
 from typing import Tuple, Optional, Callable
 import time
@@ -11,16 +10,17 @@ from detector.timer import Timer
 
 class VideoProcessingEngine:
     def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor,
-                 notification_function: Callable[[], None]) -> None:
+                 notification_function: Callable[[], None],
+                 display_processed_frame_function: Callable[[MatLike], None]) -> None:
         self._video_capture = video_capture
         self._image_processor = image_processor
         self._notification_function = notification_function
+        self._display_processed_frame_function = display_processed_frame_function
 
         self._max_frame_width = 1920
         self._max_frame_height = 1080
 
         self._frame_buffer = None
-        self._processed_frame_buffer = None
         self._is_capture_on = False
 
         self._frame_set_lock = threading.Lock()
@@ -50,17 +50,6 @@ class VideoProcessingEngine:
     def _fetch_buffer(self) -> MatLike|None:
         frame = self._frame_buffer
         self._frame_buffer = None
-        return frame
-    
-
-    def _set_processed_frame_buffer(self, frame: MatLike) -> None:
-        self._processed_frame_buffer = frame
-
-
-    def _fetch_processed_frame_buffer(self) -> MatLike:
-        frame = self._processed_frame_buffer
-        self._processed_frame_buffer = None
-
         return frame
 
 
@@ -182,13 +171,5 @@ class VideoProcessingEngine:
             if are_there_objects:
                 self._notification_function()
        
-            with self._frame_set_lock:
-                self._set_processed_frame_buffer(frame)
+            self._display_processed_frame_function(frame)
             
-
-    def get_processed_frame(self) -> Tuple[bool, Optional[MatLike]]:
-        with self._frame_set_lock:
-            is_capture_on = self._is_capture_on
-            frame = self._fetch_processed_frame_buffer()
-
-        return is_capture_on, frame

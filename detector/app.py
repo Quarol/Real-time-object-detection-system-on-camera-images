@@ -25,14 +25,21 @@ class App:
 
         self._video_capture = VideoCapture()
         self._image_processor = ImageProcessor()
-        self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor, self._notify_user)
-        self._gui = GUI(self)
+        self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor,
+                                                              self._notify_user, self._display_frame)
+        
+        frame_display_scaling_factor = 1.0
+        self._gui = GUI(self, frame_display_scaling_factor)
 
 
     def run(self) -> None:
         self._video_processing_engine.run()
         self._gui.show()
         self._video_processing_engine.shutdown()
+
+    
+    def _display_frame(self, frame: MatLike) -> None:
+        self._gui._show_frame(frame)
 
 
     def set_video_source(self, source_id: int) -> None:

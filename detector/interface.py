@@ -13,48 +13,49 @@ VIDEO_FRAME_MARGIN = 10
 AFTER_DELAY = 1
 
 class GUI:
-    def __init__(self, parent_app: App) -> None:
+    def __init__(self, parent_app: App, frame_display_scaling_factor : float = 1.0) -> None:
         self._parent_app = parent_app
 
-        self._selected_video_source_id = None
-        self._initialize_gui()
+        # Initializing screen resolution (for window size)
+        screen = ImageGrab.grab()
+        screen_width, screen_height = screen.size
+        screen_width = int(frame_display_scaling_factor * screen_width)
+        screen_height = int(frame_display_scaling_factor * screen_height)
+        self._parent_app.set_frame_area_dimensions(screen_width, screen_height)
+        self._no_video_image = self._generate_black_image(screen_width, screen_height)
 
-        self._no_video_image = self._generate_black_image()
+        self._selected_video_source_id = None
+        self._initialize_settings_gui()
+
         self._frame_counter = 0
         self._time_before_frame = None
         self._fps_label_value = 'FPS: 00.00'
 
-        self._parent_app.set_frame_area_dimensions(self._max_frame_width, self._max_frame_height)
+        
+    def _generate_black_image(self, max_width, max_height) -> MatLike:
+        black_image = np.zeros((max_height, max_width, 3), dtype=np.uint8)
+        return black_image
 
 
-    def _initialize_gui(self) -> None:
+    def _initialize_settings_gui(self) -> None:
         self._root = tk.Tk()
-
         self._root.title('Object detector')
         self._root.resizable(False, False)
 
-        screen_space_factor = 0.70
+        # Set window size based on screen resolution (70% of screen size)
         screen = ImageGrab.grab()
         screen_width, screen_height = screen.size
+        scaling_factor = 0.3
 
-        window_width = int(screen_width * screen_space_factor)
-        window_height = int(screen_height * screen_space_factor)
-
-        self._root.geometry(f'{window_width}x{window_height}') # Set window size
-        self._root.geometry(f'+{0}+{0}') # Set window position
+        window_width = int(screen_width * scaling_factor)
+        window_height = int(screen_height * scaling_factor)
+        self._root.geometry(f'{window_width}x{window_height}')
+        self._root.geometry(f'+{0}+{0}')
 
         self._menubar = tk.Menu(master=self._root)
         self._root.config(menu=self._menubar)
         self._initialize_video_source_menu()
         self._initialize_detector_parameters_menu()
-        self._initialize_video_player()
-
-        # Initialize FPS label
-        self._fps_label = tk.Label(self._root, text='FPS: 0.00', font=('Helvetica', 12), bg='lightgray')
-        self._fps_label.place(relx=0.95, rely=0.05, anchor='ne')
-
-        self._root_width = window_width
-        self._root_height = window_height
 
 
     def _initialize_video_source_menu(self) -> None:
@@ -73,63 +74,39 @@ class GUI:
         self._selected_video_source_id.set(NO_VIDEO)
         self._menubar.add_cascade(menu=self._source_menu, label='Video source')
 
-    
+
     def set_video_source(self, source_id: int):
         self._selected_video_source_id.set(source_id)
 
     
     def _initialize_detector_parameters_menu(self):
-        self._detector_menu = tk.Menu(master=self._menubar, tearoff=0)
-        self._menubar.add_cascade(menu=self._detector_menu, label='Detector Parameters')
+        # This part is now moved to the main window
+        self._detector_frame = tk.Frame(self._root)
+        self._detector_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
-        self._detector_menu.add_command(
-            label='Show detector parameters', 
-            command=self._show_detector_parameters_window
-        )
-
-
-    def _show_detector_parameters_window(self):
-        # Check if the window already exists
-        if hasattr(self, '_detector_parameters_window') and self._detector_parameters_window.winfo_exists():
-            self._detector_parameters_window.lift() 
-            return
-        
-        # Create a slider for confidence threshold
-        self._detector_parameters_window = tk.Toplevel(self._root)
-        self._detector_parameters_window.title('Detector Parameters')
-
-        width_scaling_factor = 0.36
-        height_scaling_factor = 0.5
-        window_width = int(self._root_width * width_scaling_factor)
-        window_height = int(self._root_height * height_scaling_factor)
-
-        self._detector_parameters_window.geometry(f'{window_width}x{window_height}')
-        self._detector_parameters_window.resizable(False, False)
-
-        confidence_threshold_label = tk.Label(self._detector_parameters_window, text='Confidence threshold:')
+        # Add confidence threshold slider
+        confidence_threshold_label = tk.Label(self._detector_frame, text='Confidence threshold:')
         confidence_threshold_label.pack(pady=1)
 
         confidence_threshold_slider = tk.Scale(
-            self._detector_parameters_window,
+            self._detector_frame,
             from_=0.00,
             to=1.00,
             resolution=0.01,
             orient='horizontal',
             command=self._update_confidence_threshold
         )
-        confidence_threshold_slider.set(
-            self._parent_app.get_confidence_threshold()
-        )
+        confidence_threshold_slider.set(self._parent_app.get_confidence_threshold())
         confidence_threshold_slider.pack(pady=10)
 
-        # Create classes of object that will be detected:
-        classes_label = tk.Label(self._detector_parameters_window, text='Classes of objects:')
+        # Add object class selection
+        classes_label = tk.Label(self._detector_frame, text='Classes of objects:')
         classes_label.pack(pady=1)
 
-        checkbox_canvas = tk.Canvas(self._detector_parameters_window)
+        checkbox_canvas = tk.Canvas(self._detector_frame)
         checkbox_canvas.pack(side='left', fill='both', expand=True)
 
-        scrollbar = tk.Scrollbar(self._detector_parameters_window, orient='vertical', command=checkbox_canvas.yview)
+        scrollbar = tk.Scrollbar(self._detector_frame, orient='vertical', command=checkbox_canvas.yview)
         scrollbar.pack(side='right', fill='y')
 
         checkbox_canvas.configure(yscrollcommand=scrollbar.set)
@@ -153,7 +130,7 @@ class GUI:
                 command=lambda idx=index, v=var: self._update_classes(idx, v)
             )
 
-            # Place the checkbox in the grid (3 per row)
+            # Place the checkbox in the grid
             checkbox.grid(row=row, column=col, sticky='w', padx=5, pady=2)
 
             checkbox_vars.append(var)
@@ -164,16 +141,23 @@ class GUI:
                 row += 1
 
         checkbox_frame.update_idletasks()
-        checkbox_canvas.config(scrollregion=checkbox_canvas.bbox('all')) 
+        checkbox_canvas.config(scrollregion=checkbox_canvas.bbox('all'))
 
-        # Add moouse scroll event to object selection menu
-        def on_mouse_wheel(event):
-            if event.delta < 0:
-                checkbox_canvas.yview_scroll(1, 'units')
-            else:
-                checkbox_canvas.yview_scroll(-1, 'units')
-        self._detector_parameters_window.bind_all('<MouseWheel>', on_mouse_wheel)
+        # Bind the scroll events
+        checkbox_canvas.bind_all('<MouseWheel>', self._on_mouse_scroll)  # For Windows/macOS
+        checkbox_canvas.bind_all('<Button-4>', self._on_mouse_scroll)    # For Linux scroll up
+        checkbox_canvas.bind_all('<Button-5>', self._on_mouse_scroll)    # For Linux scroll down
 
+        # Save checkbox_canvas reference
+        self.checkbox_canvas = checkbox_canvas
+
+    
+    def _on_mouse_scroll(self, event):
+        if event.num == 4 or event.delta > 0:
+            self.checkbox_canvas.yview_scroll(-1, 'units')
+        elif event.num == 5 or event.delta < 0:
+            self.checkbox_canvas.yview_scroll(1, 'units')
+        
 
     def _update_confidence_threshold(self, value):
         self._parent_app.set_confidence_threshold(float(value))
@@ -186,29 +170,6 @@ class GUI:
             self._parent_app.remove_detected_class(class_index)
 
 
-    def _initialize_video_player(self) -> None:
-        self._video_frame = tk.Frame(self._root)
-        self._video_frame.pack(
-            padx=VIDEO_FRAME_MARGIN,
-            pady=VIDEO_FRAME_MARGIN,
-            fill=tk.BOTH,
-            expand=True
-        )
-
-        self._display_frame = tk.Label(self._video_frame)
-
-        self._display_frame.grid(row=0, column=0)
-
-        self._video_frame.grid_rowconfigure(0, weight=1)
-        self._video_frame.grid_columnconfigure(0, weight=1)
-
-        self._root.update()
-
-        min_frame_scale_factor = 0.45 
-        self._max_frame_width = self._video_frame.winfo_width()
-        self._max_frame_height = self._video_frame.winfo_height()
-
-
     def select_video_file(self) -> str:
         filetypes = [
             ('Video files', '.mp4 *.avi *.mkv *.mov *.wmv')
@@ -219,21 +180,18 @@ class GUI:
 
 
     def show(self) -> None:
-        self._show_frame(self._no_video_image)
-        self._time_before_frame = Timer.get_current_time()
-        self._update_frame()
         self._root.mainloop()
 
 
-    def _show_frame(self, frame: MatLike) -> None:
-        img = Image.fromarray(frame)
-        imgtk = ImageTk.PhotoImage(image=img)
-        self._display_frame.imgtk = imgtk
-        self._display_frame.configure(image=imgtk)
+    def display_frame(self, frame: MatLike) -> None:
+        self._show_frame(frame)
 
-        #frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+
+    def _show_frame(self, frame: MatLike) -> None:
+        frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        print(frame)
         #cv.putText(frame, self._fps_label_value, (30, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv.LINE_AA)
-        #cv.imshow('frame', frame)
+        #cv.imshow('Frames', frame)
 
 
     def _update_frame(self) -> None:
@@ -266,18 +224,10 @@ class GUI:
         if duration >= 1:
             real_fps = self._frame_counter / duration if duration != 0 else 'inf'
             self._fps_label_value = f'FPS: {real_fps:.2f}'
-            self._fps_label.config(text=self._fps_label_value)
             
             self._time_before_frame = time_after_frame
             self._frame_counter = 0
 
         if not is_capture_on:
             self._fps_label_value = f'FPS: 00.00'
-            self._fps_label.config(text=self._fps_label_value)
             self._show_frame(self._no_video_image)
-
-
-    def _generate_black_image(self) -> MatLike:
-        black_image = np.zeros((self._max_frame_height, self._max_frame_width, 3), dtype=np.uint8)
-        return black_image
-    
