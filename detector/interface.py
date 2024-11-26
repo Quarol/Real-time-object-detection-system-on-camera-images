@@ -20,7 +20,7 @@ class GUI:
 
         self._no_video_image = self._generate_black_image()
         self._frame_counter = 0
-        self._time_before_frame = Timer.get_current_time()
+        self._time_before_frame = None
 
         self._parent_app.set_frame_area_dimensions(self._max_frame_width, self._max_frame_height,
                                                    self._min_frame_width, self._min_frame_height)
@@ -49,8 +49,8 @@ class GUI:
         self._initialize_video_player()
 
         # Initialize FPS label
-        self._fps_label = tk.Label(self._root, text="FPS: 0", font=("Helvetica", 12), bg="lightgray")
-        self._fps_label.place(relx=0.95, rely=0.05, anchor="ne")
+        self._fps_label = tk.Label(self._root, text='FPS: 0.00', font=('Helvetica', 12), bg='lightgray')
+        self._fps_label.place(relx=0.95, rely=0.05, anchor='ne')
 
         self._root_width = window_width
         self._root_height = window_height
@@ -82,7 +82,7 @@ class GUI:
         self._menubar.add_cascade(menu=self._detector_menu, label='Detector Parameters')
 
         self._detector_menu.add_command(
-            label="Show detector parameters", 
+            label='Show detector parameters', 
             command=self._show_detector_parameters_window
         )
 
@@ -136,13 +136,14 @@ class GUI:
         checkbox_frame = tk.Frame(checkbox_canvas)
         checkbox_canvas.create_window((0, 0), window=checkbox_frame, anchor='nw')
 
-        checkbox_vars = {}
+        checkbox_vars = []
         row = 0
         col = 0
         max_items_per_row = 4
-        all_classes = self._parent_app.get_available_classes_in_dictionary()
+        all_classes = self._parent_app.get_available_classes()
         detected_classes = self._parent_app.get_detected_classes()
-        for index, class_name in all_classes.items():
+
+        for index, class_name in enumerate(all_classes):
             var = tk.BooleanVar(value=(index in detected_classes))
             checkbox = tk.Checkbutton(
                 checkbox_frame,
@@ -154,7 +155,7 @@ class GUI:
             # Place the checkbox in the grid (3 per row)
             checkbox.grid(row=row, column=col, sticky='w', padx=5, pady=2)
 
-            checkbox_vars[index] = var
+            checkbox_vars.append(var)
 
             col += 1
             if col == max_items_per_row:
@@ -162,7 +163,7 @@ class GUI:
                 row += 1
 
         checkbox_frame.update_idletasks()
-        checkbox_canvas.config(scrollregion=checkbox_canvas.bbox("all")) 
+        checkbox_canvas.config(scrollregion=checkbox_canvas.bbox('all')) 
 
         # Add moouse scroll event to object selection menu
         def on_mouse_wheel(event):
@@ -170,7 +171,7 @@ class GUI:
                 checkbox_canvas.yview_scroll(1, 'units')
             else:
                 checkbox_canvas.yview_scroll(-1, 'units')
-        self._detector_parameters_window.bind_all("<MouseWheel>", on_mouse_wheel)
+        self._detector_parameters_window.bind_all('<MouseWheel>', on_mouse_wheel)
 
 
     def _update_confidence_threshold(self, value):
@@ -234,33 +235,44 @@ class GUI:
 
 
     def _update_frame(self) -> None:
-        ret, frame = self._parent_app.get_latest_frame()
+        is_capture_on, frame = self._parent_app.get_latest_frame()
 
-        if ret:
+        if is_capture_on:
+            if self._time_before_frame is None:
+                self._time_before_frame = Timer.get_current_time()
+
             if frame is not None:
                 self._show_frame(frame)
                 self._frame_counter += 1
         else:
+            self._time_before_frame = None
             self._show_frame(self._no_video_image)
             self._parent_app.set_video_source(NO_VIDEO)
             self._selected_video_source_id.set(NO_VIDEO)
 
-        self._count_and_update_fps()
+        self._count_and_update_fps(is_capture_on)
         self._video_frame.after(AFTER_DELAY, self._update_frame)
     
 
-    def _generate_black_image(self) -> MatLike:
-        black_image = np.zeros((self._max_frame_height, self._max_frame_width, 3), dtype=np.uint8)
-        return black_image
-    
+    def _count_and_update_fps(self, is_capture_on) -> None:
+        if self._time_before_frame is None:
+            return
 
-    def _count_and_update_fps(self) -> None:
         time_after_frame = Timer.get_current_time()
         duration = time_after_frame - self._time_before_frame
 
         if duration >= 1:
             real_fps = self._frame_counter / duration if duration != 0 else 'inf'
-            self._fps_label.config(text=f"FPS: {real_fps:.2f}")
+            self._fps_label.config(text=f'FPS: {real_fps:.2f}')
 
             self._time_before_frame = time_after_frame
             self._frame_counter = 0
+
+        if not is_capture_on:
+            self._fps_label.config(text=f'FPS: 0.00')
+
+
+    def _generate_black_image(self) -> MatLike:
+        black_image = np.zeros((self._max_frame_height, self._max_frame_width, 3), dtype=np.uint8)
+        return black_image
+    

@@ -11,7 +11,6 @@ from detector.video_capture import VideoCapture, NO_VIDEO, VIDEO_FILE
 from detector.image_processor import ImageProcessor
 from detector.video_processing_engine import VideoProcessingEngine
 from detector.yolo_settings import yolo_inference_config
-import detector.yolo_settings as yolo_settings
 
 ALERT_SOUND = 'assets/alert.wav'
 
@@ -53,15 +52,15 @@ class App:
 
     
     def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
-        return self._video_processing_engine.get_latest_frame()
+        return self._video_processing_engine.get_processed_frame()
 
 
     def set_frame_area_dimensions(self, max_width: int, max_height: int, min_width: int, min_height: int) -> None:
         self._video_processing_engine.set_window_dimensions(max_width, max_height, min_width, min_height)
 
 
-    def get_available_classes_in_dictionary(self):
-        return yolo_settings.YOLO_CLASSES
+    def get_available_classes(self) -> list[str]:
+        return yolo_inference_config.get_available_classes()
 
 
     def add_detected_class(self, class_index: int) -> None:
@@ -76,7 +75,7 @@ class App:
         yolo_inference_config.set_confidence_threshold(confidence_threshold)
 
     
-    def get_detected_classes(self):
+    def get_detected_classes(self) -> list[int]:
         return yolo_inference_config.classes
 
 
@@ -84,7 +83,7 @@ class App:
         return yolo_inference_config.confidence_threshold
 
 
-    def get_available_sources(self):
+    def get_available_sources(self) -> dict[str, int]:
         return VideoCapture.get_available_sources()
     
 

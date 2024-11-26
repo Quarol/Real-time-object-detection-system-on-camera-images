@@ -8,7 +8,6 @@ from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
 from detector.timer import Timer
 
-CAPTURED_FRAMES_QUEUE_SIZE = 1
 
 class VideoProcessingEngine:
     def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor,
@@ -17,21 +16,19 @@ class VideoProcessingEngine:
         self._image_processor = image_processor
         self._notification_function = notification_function
 
-        self._latest_frame = None
-        self._is_capture_on = False
-
         self._max_frame_width = 1920
         self._max_frame_height = 1080
         self._min_frame_width = self._max_frame_width * 0.5
         self._min_frame_height = self._max_frame_height * 0.5
 
-        self._frame_queue = deque(maxlen=CAPTURED_FRAMES_QUEUE_SIZE)
+        self._frame_buffer = None
+        self._processed_frame_buffer = None
+        self._is_capture_on = False
 
         self._frame_set_lock = threading.Lock()
         self._video_capture_lock = threading.Lock()
-        self._queue_lock = threading.Lock()
-        self._queue_not_empty = threading.Condition(self._queue_lock)
-        self._queue_not_full = threading.Condition(self._queue_lock)
+        self._buffer_lock = threading.Lock()
+        self._buffer_not_empty = threading.Condition(self._buffer_lock)
         self._capture_event = threading.Event()
         self._process_event = threading.Event()
 
@@ -42,6 +39,31 @@ class VideoProcessingEngine:
 
         self._capture_event.clear()
         self._process_event.clear()
+    
+
+    def _is_buffer_empty(self) -> bool:
+        return self._frame_buffer is None 
+    
+    
+    def _set_buffer(self, frame: MatLike) -> None:
+        self._frame_buffer = frame
+
+    
+    def _fetch_buffer(self) -> MatLike|None:
+        frame = self._frame_buffer
+        self._frame_buffer = None
+        return frame
+    
+
+    def _set_processed_frame_buffer(self, frame: MatLike) -> None:
+        self._processed_frame_buffer = frame
+
+
+    def _fetch_processed_frame_buffer(self) -> MatLike:
+        frame = self._processed_frame_buffer
+        self._processed_frame_buffer = None
+
+        return frame
 
 
     def run(self) -> None:
@@ -63,9 +85,8 @@ class VideoProcessingEngine:
         self._capture_event.clear()
         self._process_event.clear()
 
-        with self._queue_lock:
-            self._queue_not_empty.notify_all()
-            self._queue_not_full.notify_all()
+        with self._buffer_lock:
+            self._buffer_not_empty.notify_all()
         
         self.remove_video_source()
 
@@ -82,6 +103,8 @@ class VideoProcessingEngine:
 
     def _stop_processing(self) -> None:
         self._process_event.clear()
+        with self._buffer_lock:
+            self._buffer_not_empty.notify_all()
 
 
     def remove_video_source(self) -> None:
@@ -110,10 +133,9 @@ class VideoProcessingEngine:
     def _end_capture(self) -> None:
         self._capture_event.clear()
 
-        with self._queue_lock:
-            self._frame_queue.clear()
-            self._queue_not_empty.notify_all()
-            self._queue_not_full.notify_all()
+        with self._buffer_lock:
+            self._frame_buffer = None
+            self._buffer_not_empty.notify_all()
 
 
     def _capture_frames(self) -> None:
@@ -138,15 +160,9 @@ class VideoProcessingEngine:
                                                                 self._max_frame_width, self._max_frame_height,
                                                                 self._min_frame_width, self._min_frame_height)
             
-            with self._queue_not_full:
-                while len(self._frame_queue) == CAPTURED_FRAMES_QUEUE_SIZE:
-                    self._queue_not_full.wait()
-                    # In case shutdown happened: end thread
-                    if not self._continue_thread_loop:
-                        return
-
-                self._frame_queue.append(frame)
-                self._queue_not_empty.notify()
+            with self._buffer_lock:
+                self._set_buffer(frame)
+                self._buffer_not_empty.notify()
 
 
     def _process_frames(self) -> None:
@@ -157,38 +173,28 @@ class VideoProcessingEngine:
                 if not self._continue_thread_loop:
                     return
 
-            with self._queue_not_empty:
-                while not self._frame_queue: # If queue is empty
-                    self._queue_not_empty.wait()
+            with self._buffer_not_empty:
+                while self._is_buffer_empty():
+                    self._buffer_not_empty.wait()
                     # In case shutdown happened: end thread
                     if not self._continue_thread_loop:  
                         return
 
-                frame = self._frame_queue.popleft()
-                self._queue_not_full.notify()
+                frame = self._fetch_buffer() 
 
-
-            start = Timer.get_current_time()
             detections, are_there_objects = self._image_processor.detect_objects(frame)
-            stop_detect = Timer.get_current_time()
             frame = self._image_processor.visualize_objects_presence(frame, detections)
-            stop = Timer.get_current_time()
-
-            total_duration = Timer.get_duration(start, stop)
-            detection_duration = Timer.get_duration(start, stop_detect)
-            draw_duration = Timer.get_duration(stop_detect, stop)
 
             if are_there_objects:
                 self._notification_function()
        
             with self._frame_set_lock:
-                self._latest_frame = frame
+                self._set_processed_frame_buffer(frame)
             
 
-    def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
+    def get_processed_frame(self) -> Tuple[bool, Optional[MatLike]]:
         with self._frame_set_lock:
             is_capture_on = self._is_capture_on
-            frame = self._latest_frame
-            self._latest_frame = None
+            frame = self._fetch_processed_frame_buffer()
 
         return is_capture_on, frame

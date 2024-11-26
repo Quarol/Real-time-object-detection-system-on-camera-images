@@ -17,9 +17,10 @@ class ImageProcessor:
 
     def set_detection_model(self, name: str) -> None:
         self._detector = YOLO(f'yolo_models/{name}')
-        yolo_settings.YOLO_CLASSES = self._detector.names
-        for i in range(WARMP_UP_ITERATIONS):
-            self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
+        yolo_inference_config.set_available_classes(self._detector.names)
+        
+        #for i in range(WARMP_UP_ITERATIONS):
+        #    self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
 
 
     def detect_objects(self, frame: MatLike) -> Results:
@@ -42,7 +43,7 @@ class ImageProcessor:
             cv.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
 
             object_class_id = self._get_object_class_id(box) 
-            object_class_name = yolo_settings.get_class_name(object_class_id)
+            object_class_name = yolo_inference_config.get_class_name(object_class_id)
 
             label_position = (int(x_min), int(y_min) - 10)
             cv.putText(
