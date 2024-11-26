@@ -64,29 +64,19 @@ class ImageProcessor:
         return int(box.cls[0])
 
 
-    def fit_frame_into_screen(self, frame: MatLike,
-                              max_frame_width, max_frame_height,
-                              min_frame_width, min_frame_height) -> MatLike:
+    def fit_frame_into_screen(self, frame: MatLike, max_frame_width, max_frame_height,) -> MatLike:
         if frame is None:
             return None
         
-        output_width, output_height = self._fitting_dimensions(frame,
-                                                               max_frame_width, max_frame_height,
-                                                               min_frame_width, min_frame_height)
+        output_width, output_height = self._fitting_dimensions(frame, max_frame_width, max_frame_height)
         frame = cv.resize(frame, (output_width, output_height), interpolation=cv.INTER_LINEAR)
         return frame
 
 
-    def _fitting_dimensions(self, frame, max_width, max_height, min_width, min_height) -> Tuple[int, int]:
+    def _fitting_dimensions(self, frame: MatLike, max_width: int, max_height: int) -> Tuple[int, int]:
         height, width = frame.shape[:2]
 
-        # Case 1: frame fits
-        if width <= max_width and width >= min_width and \
-              height <= max_height and height >= min_height:
-            return width, height
-        
-        # Case 2: either dimension exeeced the limit
-        if width > min_width or height > min_height:
+        if width > max_width or height > max_height:
             scale_x = max_width / width
             scale_y = max_height / height
 
@@ -96,15 +86,5 @@ class ImageProcessor:
             new_height = int(height * scale)
 
             return new_width, new_height
-        
-        # Case 3: either dimension is below the limit
-        scale_x = min_width / width
-        scale_y = min_height / height
-        
-        scale = max(scale_x, scale_y)
 
-        new_width = int(width * scale)
-        new_height = int(height * scale)
-
-        return new_width, new_height
-        
+        return width, height

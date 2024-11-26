@@ -55,8 +55,8 @@ class App:
         return self._video_processing_engine.get_processed_frame()
 
 
-    def set_frame_area_dimensions(self, max_width: int, max_height: int, min_width: int, min_height: int) -> None:
-        self._video_processing_engine.set_window_dimensions(max_width, max_height, min_width, min_height)
+    def set_frame_area_dimensions(self, max_width: int, max_height: int) -> None:
+        self._video_processing_engine.set_window_dimensions(max_width, max_height)
 
 
     def get_available_classes(self) -> list[str]:

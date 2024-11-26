@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk, ImageGrab
+import cv2 as cv
 from cv2.typing import MatLike
 import numpy as np
 
@@ -21,9 +22,9 @@ class GUI:
         self._no_video_image = self._generate_black_image()
         self._frame_counter = 0
         self._time_before_frame = None
+        self._fps_label_value = 'FPS: 00.00'
 
-        self._parent_app.set_frame_area_dimensions(self._max_frame_width, self._max_frame_height,
-                                                   self._min_frame_width, self._min_frame_height)
+        self._parent_app.set_frame_area_dimensions(self._max_frame_width, self._max_frame_height)
 
 
     def _initialize_gui(self) -> None:
@@ -206,8 +207,6 @@ class GUI:
         min_frame_scale_factor = 0.45 
         self._max_frame_width = self._video_frame.winfo_width()
         self._max_frame_height = self._video_frame.winfo_height()
-        self._min_frame_width = self._max_frame_width * min_frame_scale_factor
-        self._min_frame_height = self._max_frame_height * min_frame_scale_factor
 
 
     def select_video_file(self) -> str:
@@ -229,9 +228,12 @@ class GUI:
     def _show_frame(self, frame: MatLike) -> None:
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
-
         self._display_frame.imgtk = imgtk
         self._display_frame.configure(image=imgtk)
+
+        #frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        #cv.putText(frame, self._fps_label_value, (30, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv.LINE_AA)
+        #cv.imshow('frame', frame)
 
 
     def _update_frame(self) -> None:
@@ -263,13 +265,16 @@ class GUI:
 
         if duration >= 1:
             real_fps = self._frame_counter / duration if duration != 0 else 'inf'
-            self._fps_label.config(text=f'FPS: {real_fps:.2f}')
-
+            self._fps_label_value = f'FPS: {real_fps:.2f}'
+            self._fps_label.config(text=self._fps_label_value)
+            
             self._time_before_frame = time_after_frame
             self._frame_counter = 0
 
         if not is_capture_on:
-            self._fps_label.config(text=f'FPS: 0.00')
+            self._fps_label_value = f'FPS: 00.00'
+            self._fps_label.config(text=self._fps_label_value)
+            self._show_frame(self._no_video_image)
 
 
     def _generate_black_image(self) -> MatLike:

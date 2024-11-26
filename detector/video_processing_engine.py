@@ -18,8 +18,6 @@ class VideoProcessingEngine:
 
         self._max_frame_width = 1920
         self._max_frame_height = 1080
-        self._min_frame_width = self._max_frame_width * 0.5
-        self._min_frame_height = self._max_frame_height * 0.5
 
         self._frame_buffer = None
         self._processed_frame_buffer = None
@@ -71,12 +69,9 @@ class VideoProcessingEngine:
         self._capture_thread.start()
 
 
-    def set_window_dimensions(self, max_width: int, max_height: int, min_width: int, min_height: int) -> None:
+    def set_window_dimensions(self, max_width: int, max_height: int) -> None:
         self._max_frame_width = max_width
         self._max_frame_height = max_height
-
-        self._min_frame_width = min_width
-        self._min_frame_height = min_height
 
     
     def shutdown(self) -> None:
@@ -157,8 +152,7 @@ class VideoProcessingEngine:
                 continue
 
             frame = self._image_processor.fit_frame_into_screen(frame, 
-                                                                self._max_frame_width, self._max_frame_height,
-                                                                self._min_frame_width, self._min_frame_height)
+                                                                self._max_frame_width, self._max_frame_height)
             
             with self._buffer_lock:
                 self._set_buffer(frame)
