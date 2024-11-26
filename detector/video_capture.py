@@ -16,11 +16,6 @@ class VideoCapture:
     def start_capture(self, source: int|str) -> None:
         self.end_capture()
         self._video_capture = cv.VideoCapture(source)
-        
-        if source == 0:
-            width, height = 640, 360
-            self._video_capture.set(cv.CAP_PROP_FRAME_WIDTH, width)
-            self._video_capture.set(cv.CAP_PROP_FRAME_HEIGHT, height)
 
 
     def end_capture(self) -> None:
