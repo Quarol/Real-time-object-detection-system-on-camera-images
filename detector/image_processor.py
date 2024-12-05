@@ -5,22 +5,12 @@ from ultralytics.engine.results import Results
 from typing import Tuple
 
 from detector.yolo_settings import yolo_inference_config
-import detector.yolo_settings as yolo_settings
 
-WARM_UP_IMAGE = 'demo_assets/people.jpg'
-WARMP_UP_ITERATIONS = 100
 
 class ImageProcessor:
     def __init__(self) -> None:
-        self.set_detection_model('yolov8n-pretrained-default.pt')
-    
-
-    def set_detection_model(self, name: str) -> None:
-        self._detector = YOLO(f'yolo_models/{name}')
+        self._detector = YOLO('yolo_models/yolov8n.pt')
         yolo_inference_config.set_available_classes(self._detector.names)
-        
-        #for i in range(WARMP_UP_ITERATIONS):
-        #    self.detect_objects(WARM_UP_IMAGE) # Warmp up to initialize
 
 
     def detect_objects(self, frame: MatLike) -> Results:
