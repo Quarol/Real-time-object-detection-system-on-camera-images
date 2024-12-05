@@ -7,8 +7,6 @@ VIDEO_FILE = -1
 # camera: >= 0
 
 class VideoCapture:
-    max_number_of_cameras = None
-
     def __init__(self) -> None:
         self._video_capture = None
 
@@ -36,16 +34,6 @@ class VideoCapture:
             self.end_capture()
 
         return is_capture_on, frame
-    
-
-    def get_fps(self) -> float:
-        if self._video_capture is None:
-            return None
-        
-        fps = self._video_capture.get(cv.CAP_PROP_FPS)
-        if fps <= 0:
-            return None
-        return fps
 
 
     @staticmethod

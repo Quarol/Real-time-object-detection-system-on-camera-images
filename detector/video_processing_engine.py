@@ -5,15 +5,15 @@ import time
 
 from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
+from detector.app import App
 from detector.timer import Timer
 
 
 class VideoProcessingEngine:
-    def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor,
-                 notification_function: Callable[[], None]) -> None:
+    def __init__(self, video_capture: VideoCapture, image_processor: ImageProcessor, audio_alarm: App) -> None:
         self._video_capture = video_capture
         self._image_processor = image_processor
-        self._notification_function = notification_function
+        self._audio_alarm = audio_alarm
 
         self._max_frame_width = 1920
         self._max_frame_height = 1080
@@ -179,7 +179,7 @@ class VideoProcessingEngine:
             frame = self._image_processor.visualize_objects_presence(frame, detections)
 
             if are_there_objects:
-                self._notification_function()
+                self._audio_alarm.play_audio_alert()
        
             with self._frame_set_lock:
                 self._set_processed_frame_buffer(frame)

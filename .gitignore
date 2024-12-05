@@ -6,3 +6,4 @@ yolo_models/*
 /training/**
 **/testing
 **/__init__.py__
+**__init__.py

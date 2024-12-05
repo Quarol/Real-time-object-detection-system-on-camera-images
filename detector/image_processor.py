@@ -4,23 +4,24 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 from typing import Tuple
 
-from detector.yolo_settings import yolo_inference_config
+from detector.yolo_settings import YoloInferenceConfig
 
-
-class ImageProcessor:
+class ImageProcessor(YoloInferenceConfig):
     def __init__(self) -> None:
+        super().__init__()
         self._detector = YOLO('yolo_models/yolov8n.pt')
-        yolo_inference_config.set_available_classes(self._detector.names)
+        available_classes: dict = self._detector.names
+        self._all_classes = list(available_classes.values())
 
 
     def detect_objects(self, frame: MatLike) -> Results:
         results = self._detector.predict(
             frame,
-            conf=yolo_inference_config.confidence_threshold,
-            device=yolo_inference_config.device,
-            classes=yolo_inference_config.classes,
-            max_det=yolo_inference_config.max_det,
-            verbose=yolo_inference_config.verbose
+            conf=self._confidence_threshold,
+            device=self._device,
+            classes=self._classes,
+            max_det=self._max_det,
+            verbose=self._verbose
         ) # Returns list of output frames
         first_frame_result = results[0] # Get first (and only) frame
 
@@ -33,7 +34,7 @@ class ImageProcessor:
             cv.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
 
             object_class_id = self._get_object_class_id(box) 
-            object_class_name = yolo_inference_config.get_class_name(object_class_id)
+            object_class_name = self._all_classes[object_class_id]
 
             label_position = (int(x_min), int(y_min) - 10)
             cv.putText(

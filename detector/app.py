@@ -9,14 +9,13 @@ import time
 
 from detector.video_capture import VideoCapture, NO_VIDEO, VIDEO_FILE
 from detector.image_processor import ImageProcessor
-from detector.video_processing_engine import VideoProcessingEngine
-from detector.yolo_settings import yolo_inference_config
 
 ALERT_SOUND = 'assets/alert.wav'
 
 class App:
     def __init__(self) -> None:
         from detector.interface import GUI
+        from detector.video_processing_engine import VideoProcessingEngine
 
         self._play_alert_executor = ThreadPoolExecutor(max_workers=1)
 
@@ -25,7 +24,7 @@ class App:
 
         self._video_capture = VideoCapture()
         self._image_processor = ImageProcessor()
-        self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor, self._notify_user)
+        self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor, self)
         
         frame_display_scaling_factor = 0.8
         self._gui = GUI(self, frame_display_scaling_factor)
@@ -65,27 +64,27 @@ class App:
 
 
     def get_available_classes(self) -> list[str]:
-        return yolo_inference_config.get_available_classes()
+        return self._image_processor.get_available_classes()
 
+        
+    def get_detected_classes(self) -> list[int]:
+        return self._image_processor.get_detected_classes()
+    
 
     def add_detected_class(self, class_index: int) -> None:
-        yolo_inference_config.add_detected_class(class_index)
+        self._image_processor.add_detected_class(class_index)
 
-    
+
     def remove_detected_class(self, class_index: int) -> None:
-        yolo_inference_config.remove_detected_class(class_index)
+        self._image_processor.remove_detected_class(class_index)
 
     
     def set_confidence_threshold(self, confidence_threshold: float) -> None:
-        yolo_inference_config.set_confidence_threshold(confidence_threshold)
-
-    
-    def get_detected_classes(self) -> list[int]:
-        return yolo_inference_config.classes
+        self._image_processor.set_confidence_threshold(confidence_threshold)
 
 
     def get_confidence_threshold(self) -> float:
-        return yolo_inference_config.confidence_threshold
+        return self._image_processor.get_confidence_threshold()
 
 
     def get_available_sources(self) -> dict[str, int]:
@@ -98,6 +97,6 @@ class App:
         self._alert_event.clear()
 
 
-    def _notify_user(self) -> None:
+    def play_audio_alert(self) -> None:
         if not self._alert_event.is_set():
             self._play_alert_executor.submit(self._play_alert)

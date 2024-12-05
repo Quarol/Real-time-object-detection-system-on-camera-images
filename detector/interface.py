@@ -161,14 +161,14 @@ class GUI:
         checkbox_canvas.bind_all('<Button-5>', self._on_mouse_scroll)    # For Linux scroll down
 
         # Save checkbox_canvas reference
-        self.checkbox_canvas = checkbox_canvas
+        self._checkbox_canvas = checkbox_canvas
 
     
     def _on_mouse_scroll(self, event):
         if event.num == 4 or event.delta > 0:
-            self.checkbox_canvas.yview_scroll(-1, 'units')
+            self._checkbox_canvas.yview_scroll(-1, 'units')
         elif event.num == 5 or event.delta < 0:
-            self.checkbox_canvas.yview_scroll(1, 'units')
+            self._checkbox_canvas.yview_scroll(1, 'units')
         
 
     def _update_confidence_threshold(self, value):
@@ -193,10 +193,6 @@ class GUI:
 
     def show(self) -> None:
         self._root.mainloop()
-
-
-    def display_frame(self, frame: MatLike) -> None:
-        self._show_frame(frame)
 
 
     def _show_frame(self, frame: MatLike) -> None:
