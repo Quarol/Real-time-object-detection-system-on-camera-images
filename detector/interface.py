@@ -75,6 +75,8 @@ class GUI:
 
     def _start_displaying(self):
         self._is_displaying = True
+        cv.namedWindow('Display', cv.WINDOW_NORMAL)
+        cv.moveWindow('Display', -5, -5)
         self._update_frame()
 
 
