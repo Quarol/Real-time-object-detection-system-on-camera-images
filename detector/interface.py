@@ -7,7 +7,6 @@ from cv2.typing import MatLike
 from detector.app import App
 from detector.video_capture import NO_VIDEO
 
-VIDEO_FRAME_MARGIN = 10
 AFTER_DELAY = 1
 
 class GUI:
