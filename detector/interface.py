@@ -80,6 +80,7 @@ class GUI:
 
     def _stop_displaying(self):
         self._is_displaying = False
+        cv.destroyAllWindows()
     
 
     def _initialize_detector_parameters_menu(self):
@@ -193,7 +194,7 @@ class GUI:
 
     def _update_frame(self) -> None:
         if not self._is_displaying:
-            cv.destroyAllWindows()
+            self._stop_displaying()
             return
 
         is_capture_on, frame = self._parent_app.get_processed_frame()
