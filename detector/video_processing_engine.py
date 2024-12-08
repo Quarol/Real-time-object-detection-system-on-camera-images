@@ -6,7 +6,6 @@ import time
 from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
 from detector.app import App
-from detector.timer import Timer
 
 
 class VideoProcessingEngine:
@@ -15,8 +14,8 @@ class VideoProcessingEngine:
         self._image_processor = image_processor
         self._audio_alarm = audio_alarm
 
-        self._max_frame_width = 1920
-        self._max_frame_height = 1080
+        self._max_frame_width = 1920 # Default assumed width
+        self._max_frame_height = 1080 # Default assumed height
 
         self._frame_buffer = None
         self._processed_frame_buffer = None
@@ -68,7 +67,7 @@ class VideoProcessingEngine:
         self._capture_thread.start()
 
 
-    def set_window_dimensions(self, max_width: int, max_height: int) -> None:
+    def set_max_frame_dimension(self, max_width: int, max_height: int) -> None:
         self._max_frame_width = max_width
         self._max_frame_height = max_height
 

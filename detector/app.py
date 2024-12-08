@@ -55,12 +55,12 @@ class App:
             return True
 
     
-    def get_latest_frame(self) -> Tuple[bool, Optional[MatLike]]:
+    def get_processed_frame(self) -> Tuple[bool, Optional[MatLike]]:
         return self._video_processing_engine.get_processed_frame()
 
 
-    def set_frame_area_dimensions(self, max_width: int, max_height: int) -> None:
-        self._video_processing_engine.set_window_dimensions(max_width, max_height)
+    def set_max_display_dimention(self, max_width: int, max_height: int) -> None:
+        self._video_processing_engine.set_max_frame_dimension(max_width, max_height)
 
 
     def get_available_classes(self) -> list[str]:

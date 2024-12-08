@@ -1,12 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog
-from PIL import Image, ImageTk, ImageGrab
+from PIL import ImageGrab
 import cv2 as cv
 from cv2.typing import MatLike
-import numpy as np
-import time
 
-from detector.timer import Timer
 from detector.app import App
 from detector.video_capture import NO_VIDEO
 
@@ -22,15 +19,10 @@ class GUI:
         screen_width, screen_height = screen.size
         screen_width = int(frame_display_scaling_factor * screen_width)
         screen_height = int(frame_display_scaling_factor * screen_height)
-        self._parent_app.set_frame_area_dimensions(screen_width, screen_height)
+        self._parent_app.set_max_display_dimention(screen_width, screen_height)
 
         self._selected_video_source_id = None
         self._initialize_settings_gui()
-
-        self._frame_counter = 0
-        self._time_before_frame = None
-        self._fps_label_value = 'FPS: 00.00'
-        self._is_displaying = None
         
 
     def _initialize_settings_gui(self) -> None:
@@ -197,7 +189,6 @@ class GUI:
 
     def _show_frame(self, frame: MatLike) -> None:
         frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-        cv.putText(frame, self._fps_label_value, (30, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv.LINE_AA)
         cv.imshow('Display', frame)
 
 
@@ -206,38 +197,14 @@ class GUI:
             cv.destroyAllWindows()
             return
 
-        is_capture_on, frame = self._parent_app.get_latest_frame()
+        is_capture_on, frame = self._parent_app.get_processed_frame()
 
         if is_capture_on:
-            if self._time_before_frame is None:
-                self._time_before_frame = Timer.get_current_time()
-
             if frame is not None:
                 self._show_frame(frame)
-                self._frame_counter += 1
         else:
-            self._time_before_frame = None
             self._parent_app.set_video_source(NO_VIDEO)
             self._selected_video_source_id.set(NO_VIDEO)
             self._stop_displaying()
 
-        self._count_and_update_fps(is_capture_on)
         self._root.after(AFTER_DELAY, self._update_frame)
-    
-
-    def _count_and_update_fps(self, is_capture_on) -> None:
-        if self._time_before_frame is None:
-            return
-
-        time_after_frame = Timer.get_current_time()
-        duration = time_after_frame - self._time_before_frame
-
-        if duration >= 1:
-            real_fps = self._frame_counter / duration if duration != 0 else 'inf'
-            self._fps_label_value = f'FPS: {real_fps:.2f}'
-            
-            self._time_before_frame = time_after_frame
-            self._frame_counter = 0
-
-        if not is_capture_on:
-            self._fps_label_value = f'FPS: 00.00'
