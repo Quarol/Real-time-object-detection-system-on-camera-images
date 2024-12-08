@@ -201,9 +201,8 @@ class GUI:
         if is_capture_on:
             if frame is not None:
                 self._show_frame(frame)
+            self._root.after(AFTER_DELAY, self._update_frame)
         else:
             self._parent_app.set_video_source(NO_VIDEO)
             self._selected_video_source_id.set(NO_VIDEO)
             self._stop_displaying()
-
-        self._root.after(AFTER_DELAY, self._update_frame)
