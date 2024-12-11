@@ -55,7 +55,7 @@ class ImageProcessor(YoloInferenceConfig):
         return int(box.cls[0])
 
 
-    def fit_frame_into_screen(self, frame: MatLike, max_frame_width, max_frame_height,) -> MatLike:
+    def fit_frame_into_screen(self, frame: MatLike, max_frame_width, max_frame_height) -> MatLike:
         if frame is None:
             return None
         

@@ -10,26 +10,23 @@ from detector.video_capture import NO_VIDEO
 AFTER_DELAY = 1
 
 class GUI:
-    def __init__(self, parent_app: App, frame_display_scaling_factor : float = 1.0) -> None:
-        self._parent_app = parent_app
+    def __init__(self, communication_interface: App) -> None:
+        self._communication_interface = communication_interface
 
         # Initializing screen resolution (for window size)
         screen = ImageGrab.grab()
         screen_width, screen_height = screen.size
-        screen_width = int(frame_display_scaling_factor * screen_width)
-        screen_height = int(frame_display_scaling_factor * screen_height)
-        self._parent_app.set_max_display_dimention(screen_width, screen_height)
+        self._communication_interface.set_max_display_dimention(screen_width, screen_height)
 
         self._selected_video_source_id = None
-        self._initialize_settings_gui()
+        self._initialize_control_panel()
         
 
-    def _initialize_settings_gui(self) -> None:
+    def _initialize_control_panel(self) -> None:
         self._root = tk.Tk()
-        self._root.title('Object detector')
+        self._root.title('Control panel')
         self._root.resizable(False, False)
 
-        # Set window size based on screen resolution (70% of screen size)
         screen = ImageGrab.grab()
         screen_width, screen_height = screen.size
         scaling_factor = 0.3
@@ -49,7 +46,7 @@ class GUI:
         self._source_menu = tk.Menu(master=self._menubar, tearoff=0)
         self._selected_video_source_id = tk.IntVar()
 
-        sources = self._parent_app.get_available_sources()
+        sources = self._communication_interface.get_available_sources()
         for source_name in sources:
             self._source_menu.add_radiobutton(
                 label=source_name,
@@ -62,30 +59,29 @@ class GUI:
         self._menubar.add_cascade(menu=self._source_menu, label='Video source')
 
 
-    def _on_video_source_select(self, source_id: int):
-        is_source_on = self._parent_app.set_video_source(source_id)
+    def _on_video_source_select(self, source_id: int) -> None:
+        is_source_on = self._communication_interface.set_video_source(source_id)
         self._selected_video_source_id.set(source_id)
 
         if is_source_on:
-            self._is_displaying = True
-            self._update_frame()
+            self._start_displaying()
         else:
             self._stop_displaying()
 
 
-    def _start_displaying(self):
+    def _start_displaying(self) -> None:
         self._is_displaying = True
         cv.namedWindow('Display', cv.WINDOW_NORMAL)
-        cv.moveWindow('Display', -5, -5)
+        cv.moveWindow('Display', 0, 0)
         self._update_frame()
 
 
-    def _stop_displaying(self):
+    def _stop_displaying(self) -> None:
         self._is_displaying = False
         cv.destroyAllWindows()
     
 
-    def _initialize_detector_parameters_menu(self):
+    def _initialize_detector_parameters_menu(self) -> None:
         # This part is now moved to the main window
         self._detector_frame = tk.Frame(self._root)
         self._detector_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
@@ -102,7 +98,7 @@ class GUI:
             orient='horizontal',
             command=self._update_confidence_threshold
         )
-        confidence_threshold_slider.set(self._parent_app.get_confidence_threshold())
+        confidence_threshold_slider.set(self._communication_interface.get_confidence_threshold())
         confidence_threshold_slider.pack(pady=10)
 
         # Add object class selection
@@ -124,8 +120,8 @@ class GUI:
         row = 0
         col = 0
         max_items_per_row = 4
-        all_classes = self._parent_app.get_available_classes()
-        detected_classes = self._parent_app.get_detected_classes()
+        all_classes = self._communication_interface.get_available_classes()
+        detected_classes = self._communication_interface.get_detected_classes()
 
         for index, class_name in enumerate(all_classes):
             var = tk.BooleanVar(value=(index in detected_classes))
@@ -158,22 +154,22 @@ class GUI:
         self._checkbox_canvas = checkbox_canvas
 
     
-    def _on_mouse_scroll(self, event):
+    def _on_mouse_scroll(self, event) -> None:
         if event.num == 4 or event.delta > 0:
             self._checkbox_canvas.yview_scroll(-1, 'units')
         elif event.num == 5 or event.delta < 0:
             self._checkbox_canvas.yview_scroll(1, 'units')
         
 
-    def _update_confidence_threshold(self, value):
-        self._parent_app.set_confidence_threshold(float(value))
+    def _update_confidence_threshold(self, value) -> None:
+        self._communication_interface.set_confidence_threshold(float(value))
 
 
-    def _update_classes(self, class_index, var):
+    def _update_classes(self, class_index, var) -> None:
         if var.get():
-            self._parent_app.add_detected_class(class_index)
+            self._communication_interface.add_detected_class(class_index)
         else:
-            self._parent_app.remove_detected_class(class_index)
+            self._communication_interface.remove_detected_class(class_index)
 
 
     def select_video_file(self) -> str:
@@ -199,13 +195,13 @@ class GUI:
             self._stop_displaying()
             return
 
-        is_capture_on, frame = self._parent_app.get_processed_frame()
+        is_capture_on, frame = self._communication_interface.get_processed_frame()
 
         if is_capture_on:
             if frame is not None:
                 self._show_frame(frame)
             self._root.after(AFTER_DELAY, self._update_frame)
         else:
-            self._parent_app.set_video_source(NO_VIDEO)
+            self._communication_interface.set_video_source(NO_VIDEO)
             self._selected_video_source_id.set(NO_VIDEO)
             self._stop_displaying()

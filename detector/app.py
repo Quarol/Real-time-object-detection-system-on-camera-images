@@ -5,7 +5,6 @@ from typing import Tuple, Optional
 from cv2.typing import MatLike
 
 import os
-import time
 
 from detector.video_capture import VideoCapture, NO_VIDEO, VIDEO_FILE
 from detector.image_processor import ImageProcessor
@@ -26,8 +25,7 @@ class App:
         self._image_processor = ImageProcessor()
         self._video_processing_engine = VideoProcessingEngine(self._video_capture, self._image_processor, self)
         
-        frame_display_scaling_factor = 0.8
-        self._gui = GUI(self, frame_display_scaling_factor)
+        self._gui = GUI(self)
 
 
     def run(self) -> None:
