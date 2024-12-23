@@ -4,4 +4,8 @@
 yolo_models/*
 !yolo_models/.gitkeep
 /training/**
-/testing
+**/testing
+**/__init__.py__
+**__init__.py
+**_testing**
+
