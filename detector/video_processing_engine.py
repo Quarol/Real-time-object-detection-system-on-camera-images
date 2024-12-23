@@ -1,7 +1,6 @@
 import threading
 from cv2.typing import MatLike
-from typing import Tuple, Optional, Callable
-import time
+from typing import Tuple, Optional
 
 from detector.image_processor import ImageProcessor
 from detector.video_capture import VideoCapture
