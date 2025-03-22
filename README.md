@@ -1,4 +1,4 @@
-# Real time object detector using YOLOv8n model.
+# Real time object detection system on camera images.
 
 This is a simple project using YOLOv8n, a state-of-art model, to perform object detection task .
 
